@@ -130,11 +130,11 @@ do
     case "$opt" in
       t)
         TVAL=$OPTARG
-        TAG="tags/$TVAL"
+        TAG="$TVAL"
         ;;
       b)
         TVAL=$OPTARG
-        TAG="branches/$TVAL"
+        TAG="$TVAL"
         BUILD=pic32-$TVAL-$DATE
         ;;
       N)
