@@ -1,8 +1,14 @@
 #!/bin/bash
 
-GIT_CHIPKIT_CXX_REPO_ROOT=https://github.com/jasonkajita/chipKIT-cxx/tarball
-GIT_PIC32_PART_SUPPORT_REPO_ROOT=https://github.com/jasonkajita/pic32-part-support/tarball
-GIT_PIC32_NEWLIB_REPO_ROOT=https://github.com/jasonkajita/pic32-newlib/tarball
+SOURCE_GITHUB_ACCOUNT=jasonkajita
+PLIB_IMAGE_TAR=plib-image-20120208.tar.bz2
+
+GIT_CHIPKIT_CXX_REPO_ROOT=https://github.com/$SOURCE_GITHUB_ACCOUNT/chipKIT-cxx/tarball
+GIT_PIC32_PART_SUPPORT_REPO_ROOT=https://github.com/$SOURCE_GITHUB_ACCOUNT/pic32-part-support/tarball
+GIT_PIC32_NEWLIB_REPO_ROOT=https://github.com/$SOURCE_GITHUB_ACCOUNT/pic32-newlib/tarball
+GIT_PLIB_IMAGE_TAR=https://github.com/downloads/$SOURCE_GITHUB_ACCOUNT/pic32-part-support/$PLIB_IMAGE_TAR
+
+##############
 
 echo "$BASH_SOURCE START BUILD..."
 # Figure out which MinGW compiler we have. Candidates are:
@@ -52,88 +58,90 @@ show_usage()
         exit 1
     }
 
-    ####
-    # assert_success()
-    #   If the first parameter is non-zero, print the second parameter
-    #   and exit the script
-    ####
-    function assert_success ()
-        {
-            local RESULT=$1
-            local MESSAGE=$2
-            if [ $RESULT != 0 ]
-            then
-                echo "$MESSAGE ($RESULT)"
-                if [ "x$GROWL_SEND" != "x" ] ; then
-                    echo "$GROWL_SEND -s -p1 -t $BASH_SOURCE -m $MESSAGE"
-                    $GROWL_SEND "-s" "-p1" "-t" "$BASH_SOURCE" "-m" "$MESSAGE"
-                elif [ "x$NOTIFY_SEND" != "x" ] ; then
-                    $NOTIFY_SEND "$MESSAGE" "Build Error"
-                fi
-                echo "$MESSAGE ($RESULT)" >> $LOGFILE
-                unset GCC_FOR_TARGET
-                unset CC_FOR_TARGET
-                unset CXX_FOR_TARGET
-                unset GXX_FOR_TARGET
-                unset CPP_FOR_TARGET
-                unset CC_FOR_BUILD
-                unset CXX_FOR_BUILD
-                unset CC
-                unset CPP
-                unset CXX
-                unset LD
-                unset AR
-                exit $RESULT
+####
+# assert_success()
+#   If the first parameter is non-zero, print the second parameter
+#   and exit the script
+####
+function assert_success ()
+    {
+        local RESULT=$1
+        local MESSAGE=$2
+        if [ $RESULT != 0 ]
+        then
+            echo "$MESSAGE ($RESULT)"
+            if [ "x$GROWL_SEND" != "x" ] ; then
+                echo "$GROWL_SEND -s -p1 -t $BASH_SOURCE -m $MESSAGE"
+                $GROWL_SEND "-s" "-p1" "-t" "$BASH_SOURCE" "-m" "$MESSAGE"
+            elif [ "x$NOTIFY_SEND" != "x" ] ; then
+                $NOTIFY_SEND "$MESSAGE" "Build Error"
             fi
-        }
+            echo "$MESSAGE ($RESULT)" >> $LOGFILE
+            unset GCC_FOR_TARGET
+            unset CC_FOR_TARGET
+            unset CXX_FOR_TARGET
+            unset GXX_FOR_TARGET
+            unset CPP_FOR_TARGET
+            unset CC_FOR_BUILD
+            unset CXX_FOR_BUILD
+            unset CC
+            unset CPP
+            unset CXX
+            unset LD
+            unset AR
+            exit $RESULT
+        fi
+    }
 
-        function status_update ()
-            {
-                local MESSAGE=$1
-                if [ "x$GROWL_SEND" != "x" ] ; then
-                    $GROWL_SEND "-t" "$BASH_SOURCE:" "-m" "$MESSAGE"
-                elif [ "x$NOTIFY_SEND" != "x" ] ; then
-                    $NOTIFY_SEND "$MESSAGE" "$BASH_SOURCE"
-                fi
+function status_update ()
+    {
+        local MESSAGE=$1
+        if [ "x$GROWL_SEND" != "x" ] ; then
+            $GROWL_SEND "-t" "$BASH_SOURCE:" "-m" "$MESSAGE"
+        elif [ "x$NOTIFY_SEND" != "x" ] ; then
+            $NOTIFY_SEND "$MESSAGE" "$BASH_SOURCE"
+        fi
 
-            }
+    }
 
-            ### Main script body
+### Main script body
 
-            DATE=`date +%Y%m%d`
-            TIME=`date +%H%M`
-            TVAL=master
-            #BUILD=chipKIT-cxx-$DATE
-            BUILD=chipKIT-cxx
-            TAG=master
-            FULL_ONLY=no
-            CHECKOUT="yes"
-            SKIPLIBS=""
-            SKIPNATIVE=""
-            SKIPLINUX32=""
-            SKIPGRAPHITE="yes"
-            NATIVEIMAGE=`uname`
-            NATIVEIMAGE+="-image"
-            echo "Native image is $NATIVEIMAGE"
+DATE=`date +%Y%m%d`
+TIME=`date +%H%M`
+TVAL=master
+#BUILD=chipKIT-cxx-$DATE
+BUILD=chipKIT-cxx
+TAG=master
+FULL_ONLY=no
+CHECKOUT="yes"
+SKIPLIBS=""
+SKIPNATIVE=""
+SKIPLINUX32=""
+SKIPGRAPHITE="yes"
+SKIPMULTIPLENEWLIB="yes"
+SKIPPLIBIMAGE=""
+NATIVEIMAGE=`uname`
+NATIVEIMAGE+="-image"
+echo "Native image is $NATIVEIMAGE"
 
-            # Process the arguments
-            while getopts b:FNt:Q opt
-            do
-                case "$opt" in
-                t)
-                TVAL=$OPTARG
-                TAG="tags/$TVAL"
-            ;;
-            b)
-            TVAL=$OPTARG
-            TAG="branches/$TVAL"
-            BUILD=pic32-$TVAL-$DATE
+# Process the arguments
+while getopts b:FNt:Q opt
+do
+    case "$opt" in
+      t)
+        TVAL=$OPTARG
+        TAG="tags/$TVAL"
         ;;
-        N)
+      b)
+        TVAL=$OPTARG
+        TAG="branches/$TVAL"
+        BUILD=pic32-$TVAL-$DATE
+        ;;
+      N)
         echo "No checkout"
         CHECKOUT="no"
-    ;;
-    \?) show_usage ;;
+        ;;
+     \?) show_usage ;;
     esac
 done
 
@@ -254,7 +262,7 @@ else
     LINUX32_HOST_PREFIX=""
     HOSTMACHINE=""
     BUILDMACHINE=""
-    LIBHOST="\"--with-host-libstdcxx=-static-libgcc -Wl,-Bstatic,-lstdc++,-Bdynamic -lm\""
+    LIBHOST="--with-host-libstdcxx=-static-libgcc -Wl,-Bstatic,-lstdc++,-Bdynamic -lm"
 fi
 
 cd pic32-part-support
@@ -321,7 +329,7 @@ if [ "x$SKIPNATIVE" == "x" ] ; then
 
     # Make cross binutils and install it
     echo `date` " Making all in $WORKING_DIR/native-build/binutils and installing..." >> $LOGFILE
-    make all -j4
+    make all -j2
     assert_success $? "ERROR: making/installing cross binutils build"
     make install
     assert_success $? "ERROR: making/installing cross binutils build"
@@ -348,7 +356,7 @@ if [ "x$SKIPNATIVE" == "x" ] ; then
 
     # Make native gmp and install it
     echo `date` " Making all in $WORKING_DIR/native-build/gmp and installing..." >> $LOGFILE
-    make all -j4
+    make all -j2
     assert_success $? "ERROR: making/installing gmp build"
     make install
     assert_success $? "ERROR: making/installing gmp build"
@@ -370,7 +378,7 @@ if [ "x$SKIPNATIVE" == "x" ] ; then
 
         # Make native ppl and install it
         echo `date` " Making all in $WORKING_DIR/native-build/ppl and installing..." >> $LOGFILE
-        make all -j4
+        make all -j2
         assert_success $? "ERROR: making/installing ppl build"
         make install
         assert_success $? "ERROR: making/installing ppl build"
@@ -391,7 +399,7 @@ if [ "x$SKIPNATIVE" == "x" ] ; then
 
         # Make native cloog and install it
         echo `date` " Making all in $WORKING_DIR/native-build/cloog and installing..." >> $LOGFILE
-        make all -j4
+        make all -j2
         assert_success $? "ERROR: making/installing cloog build"
         make install
         assert_success $? "ERROR: making/installing cloog build"
@@ -413,12 +421,11 @@ if [ "x$SKIPNATIVE" == "x" ] ; then
 
     # Make native libelf and install it
     echo `date` " Making all in $WORKING_DIR/native-build/libelf and installing..." >> $LOGFILE
-    make all -j4
+    make all -j2
     assert_success $? "ERROR: making/installing libelf build"
     make install
     assert_success $? "ERROR: making/installing libelf build"
     cd ..
-
 
     if [ -e zlib ]
     then
@@ -433,7 +440,7 @@ if [ "x$SKIPNATIVE" == "x" ] ; then
 
     # Make native zlib and install it
     echo `date` " Making all in $WORKING_DIR/native-build/zlib and installing..." >> $LOGFILE
-    make all -j4
+    make all -j2
     assert_success $? "ERROR: making/installing zlib build"
     make install
     assert_success $? "ERROR: making/installing zlib build"
@@ -451,7 +458,7 @@ if [ "x$SKIPNATIVE" == "x" ] ; then
 
     # Configure cross compiler
     echo `date` " Configuring cross compiler build in $WORKING_DIR/native-build..." >> $LOGFILE
-    AR_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ar" AS_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as" LD_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld" ../../chipKIT-cxx/src45x/gcc/configure --target=pic32mx --program-prefix=pic32- --disable-threads --disable-libmudflap --disable-libssp --enable-sgxx-sde-multilibs --with-gnu-as --with-gnu-ld --enable-languages=c,c++ --disable-shared --enable-static --with-newlib --disable-nls --disable-libgomp --without-headers --disable-libffi --disable-bootstrap --disable-decimal-float --disable-libquadmath --disable-__cxa_atexit --disable-libfortran --disable-libstdcxx-pch --prefix="$WORKING_DIR/$NATIVEIMAGE/pic32-tools" --libexecdir="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin" --with-dwarf2 --with-gmp="$WORKING_DIR/native-build/host-libs" $LIBHOST --disable-lto  --with-bugurl=http://www.chipkit.org/forums  XGCC_FLAGS_FOR_TARGET="-fno-rtti -fno-enforce-eh-specs" --enable-cxx-flags="-fno-exceptions -ffunction-sections"
+    AR_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ar" AS_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as" LD_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld" ../../chipKIT-cxx/src45x/gcc/configure --target=pic32mx --program-prefix=pic32- --disable-threads --disable-libmudflap --disable-libssp --enable-sgxx-sde-multilibs --with-gnu-as --with-gnu-ld --enable-languages=c,c++ --disable-shared --enable-static --with-newlib --disable-nls --disable-libgomp --without-headers --disable-libffi --disable-bootstrap --disable-decimal-float --disable-libquadmath --disable-__cxa_atexit --disable-libfortran --disable-libstdcxx-pch --prefix="$WORKING_DIR/$NATIVEIMAGE/pic32-tools" --libexecdir="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin" --with-dwarf2 --with-gmp="$WORKING_DIR/native-build/host-libs" "$LIBHOST" --disable-lto  --with-bugurl=http://www.chipkit.org/forums  XGCC_FLAGS_FOR_TARGET="-fno-rtti -fno-enforce-eh-specs" --enable-cxx-flags="-fno-exceptions -ffunction-sections"
     assert_success $? "ERROR: configuring cross build"
 
     # Make cross compiler and install it
@@ -462,7 +469,7 @@ if [ "x$SKIPNATIVE" == "x" ] ; then
     STRIP_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-strip"  \
     AR_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ar"  \
     AS_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as" \
-    LD_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld" -j4
+    LD_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld" -j2
     make all-gcc \
     NM_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-nm" \
     RANLIB_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ranlib" \
@@ -486,16 +493,25 @@ if [ "x$SKIPNATIVE" == "x" ] ; then
     cd newlib
 
     #build newlib here
-    GCC_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc CC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc -I$WORKING_DIR/chipKIT-cxx/src45x/gcc/ginclude" CXX_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ CPP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ AR_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ar RANLIB_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ranlib READELF_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-readelf STRIP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-strip AS_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as LD_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld ../../pic32-newlib/configure --target=pic32mx --disable-threads --enable-static --disable-libmudflap --disable-libssp --disable-libstdcxx-pch  --with-arch=pic32mx --enable-sgxx-sde-multilib --with-gnu-as --with-gnu-ld --enable-languages=c,c++ --disable-shared --disable-nls --with-dwarf2 --disable-bootstrap --enable-obsolete --disable-sjlj-exceptions --disable-__cxa_atexit --disable-libfortran --prefix=$WORKING_DIR/$NATIVEIMAGE/pic32-tools --libexecdir=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin --with-bugurl=http://chipkit.org/forum --disable-libgomp --disable-libffi --program-prefix=pic32- --with-newlib XGCC_FLAGS_FOR_TARGET="-fno-rtti -fno-enforce-eh-specs" --enable-cxx-flags="-fno-exceptions -ffunction-sections"
+    GCC_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc CC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc -I$WORKING_DIR/chipKIT-cxx/src45x/gcc/ginclude" CXX_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ CPP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ AR_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ar RANLIB_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ranlib READELF_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-readelf STRIP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-strip AS_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as LD_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld ../../pic32-newlib/configure --target=pic32mx --disable-threads --enable-static --disable-libmudflap --disable-libssp --disable-libstdcxx-pch  --with-arch=pic32mx --enable-sgxx-sde-multilib --with-gnu-as --with-gnu-ld --enable-languages=c,c++ --disable-shared --disable-nls --with-dwarf2 --disable-bootstrap --enable-obsolete --disable-sjlj-exceptions --disable-__cxa_atexit --disable-libfortran --prefix=$WORKING_DIR/export-image/pic32-tools --libexecdir=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin --with-bugurl=http://chipkit.org/forum --disable-libgomp --disable-libffi --program-prefix=pic32- --with-newlib XGCC_FLAGS_FOR_TARGET="-fno-rtti -fno-enforce-eh-specs" --enable-cxx-flags="-fno-exceptions -ffunction-sections"
     assert_success $? "ERROR: Configure Newlib for native build"
 
-    make all -j4
+    make all -j2
     make all
     assert_success $? "ERROR: Make newlib for native build"
     make install
     assert_success $? "ERROR: Install newlib for native build"
 
-    cd ..
+    cd $WORKING_DIR
+    rsync -qavzC --include "*/" --include "*" export-image/pic32-tools/ $NATIVEIMAGE/pic32-tools/
+    assert_success $? "ERROR: Install newlib in $NATIVEIMAGE"
+    rsync -qavzC --include "*/" --include "*" export-image/pic32-tools/ $LINUX32IMAGE/pic32-tools/
+    assert_success $? "ERROR: Install newlib in $LINUX32IMAGE"
+    rsync -qavzC --include "*/" --include "*" export-image/pic32-tools/ win32-image/pic32-tools/
+    assert_success $? "ERROR: Install newlib in win32-image"
+    
+    cd native-build
+
     if [ -e gcc ]
     then
         rm -rf gcc
@@ -514,7 +530,7 @@ if [ "x$SKIPNATIVE" == "x" ] ; then
     STRIP_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-strip"  \
     AR_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ar"  \
     AS_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as" \
-    LD_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld" -j4
+    LD_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld" -j2
     make all
     assert_success $? "ERROR: making/installing cross build all"
     make install
@@ -566,17 +582,17 @@ if [ "x$SKIPLIBS" == "x" ] ; then
     make DESTROOT=$WORKING_DIR/$NATIVEIMAGE/pic32-tools all
     assert_success $? "ERROR: making libraries for cross build"
 
-    make DESTROOT=$WORKING_DIR/$NATIVEIMAGE/pic32-tools install -j4
+    make DESTROOT=$WORKING_DIR/$NATIVEIMAGE/pic32-tools install -j2
     assert_success $? "ERROR: making libraries for $NATIVEIMAGE cross build"
 
     if [ "x$LINUX32IMAGE" != "x" ] ; then
-        make DESTROOT="$WORKING_DIR/$LINUX32IMAGE/pic32-tools" install -j4
+        make DESTROOT="$WORKING_DIR/$LINUX32IMAGE/pic32-tools" install -j2
         assert_success $? "ERROR: making libraries for linux32-image cross build"
     fi
 
-    make DESTROOT="$WORKING_DIR/export-image/pic32-tools" install -j4
+    make DESTROOT="$WORKING_DIR/export-image/pic32-tools" install -j2
     assert_success $? "ERROR: making libraries for export-image cross build"
-    make DESTROOT="$WORKING_DIR/win32-image/pic32-tools" install -j4
+    make DESTROOT="$WORKING_DIR/win32-image/pic32-tools" install -j2
     assert_success $? "ERROR: making libraries for win32-image cross build"
 
     status_update "cross-compiler library build complete"
@@ -623,7 +639,7 @@ if [ "x$SKIPLINUX32" == "x" ] ; then
 
         # Make linux-cross binutils and install it
         echo `date` " Making all in $WORKING_DIR/linux32-build/binutils and installing..." >> $LOGFILE
-        make all -j4
+        make all -j2
         assert_success $? "ERROR: making/installing linux32 Canadian-cross binutils build"
         make install
         assert_success $? "ERROR: making/installing linux32 Canadian-cross binutils build"
@@ -644,7 +660,7 @@ if [ "x$SKIPLINUX32" == "x" ] ; then
 
         # Make linux gmp and install it
         echo `date` " Making all in $WORKING_DIR/linux32-build/gmp and installing..." >> $LOGFILE
-        make all -j4
+        make all -j2
         assert_success $? "ERROR: making/installing gmp build"
         make install
         assert_success $? "ERROR: making/installing gmp build"
@@ -665,7 +681,7 @@ if [ "x$SKIPLINUX32" == "x" ] ; then
 
             # Make native ppl and install it
             echo `date` " Making all in $WORKING_DIR/linux32-build/ppl and installing..." >> $LOGFILE
-            make all -j4
+            make all -j2
             assert_success $? "ERROR: making/installing ppl build"
             make install
             assert_success $? "ERROR: making/installing ppl build"
@@ -686,7 +702,7 @@ if [ "x$SKIPLINUX32" == "x" ] ; then
 
             # Make native cloog and install it
             echo `date` " Making all in $WORKING_DIR/linux32-build/cloog and installing..." >> $LOGFILE
-            make all -j4
+            make all -j2
             assert_success $? "ERROR: making/installing cloog build"
             make install
             assert_success $? "ERROR: making/installing cloog build"
@@ -707,7 +723,7 @@ if [ "x$SKIPLINUX32" == "x" ] ; then
 
         # Make native libelf and install it
         echo `date` " Making all in $WORKING_DIR/linux32-build/libelf and installing..." >> $LOGFILE
-        make all -j4
+        make all -j2
         assert_success $? "ERROR: making/installing libelf build"
         make install
         assert_success $? "ERROR: making/installing libelf build"
@@ -726,7 +742,7 @@ if [ "x$SKIPLINUX32" == "x" ] ; then
 
         # Make linux zlib and install it
         echo `date` " Making all in $WORKING_DIR/linux32-build/zlib and installing..." >> $LOGFILE
-        make all -j4
+        make all -j2
         assert_success $? "ERROR: making/installing zlib build - all"
         make install
         assert_success $? "ERROR: making/installing zlib build - install"
@@ -763,6 +779,8 @@ if [ "x$SKIPLINUX32" == "x" ] ; then
         assert_success $? "ERROR: making/installing linux Canadian-cross compiler build"
 
         cd ..
+        
+        if [ "xSKIPMULTIPLENEWLIB" != x ]; then
 
         if [ -e newlib ]
         then
@@ -781,13 +799,15 @@ if [ "x$SKIPLINUX32" == "x" ] ; then
 
         echo `date` " Make newlib for $LINUX32IMAGE..." >> $LOGFILE
 
-        make all -j4
+        make all -j2
         make all
         assert_success $? "ERROR: Make newlib for cross build"
         make install
         assert_success $? "ERROR: Install newlib for cross build"
 
         cd ..
+        fi
+        
         if [ -e gcc ]
         then
             rm -rf gcc
@@ -802,7 +822,7 @@ if [ "x$SKIPLINUX32" == "x" ] ; then
         assert_success $? "ERROR: configuring linux32 cross build 2"
 
         make all \
-        GCC_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc CC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc -I$WORKING_DIR/chipKIT-cxx/src45x/gcc/ginclude" CXX_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ CPP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ AR_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ar RANLIB_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ranlib READELF_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-readelf STRIP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-strip AS_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as LD_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld  -j4
+        GCC_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc CC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc -I$WORKING_DIR/chipKIT-cxx/src45x/gcc/ginclude" CXX_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ CPP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ AR_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ar RANLIB_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ranlib READELF_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-readelf STRIP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-strip AS_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as LD_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld  -j2
         make all \
         GCC_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc CC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc -I$WORKING_DIR/chipKIT-cxx/src45x/gcc/ginclude" CXX_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ CPP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ AR_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ar RANLIB_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ranlib READELF_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-readelf STRIP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-strip AS_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as LD_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld
         assert_success $? "ERROR: making linux Canadian-cross compiler build"
@@ -860,7 +880,7 @@ assert_success $? "ERROR: configuring win32 binutils build"
 
 # Make MinGW32-cross binutils and install it
 echo `date` " Making all in $WORKING_DIR/win32-build/binutils and installing..." >> $LOGFILE
-make all -j4
+make all -j2
 assert_success $? "ERROR: making/installing win32 Canadian-cross binutils build"
 make install
 assert_success $? "ERROR: making/installing win32 Canadian-cross binutils build"
@@ -902,7 +922,7 @@ if [ "x$SKIPGRAPHITE" == "x" ]; then
 
     # Make native ppl and install it
     echo `date` " Making all in $WORKING_DIR/win32-build/ppl and installing..." >> $LOGFILE
-    make all -j4
+    make all -j2
     assert_success $? "ERROR: making/installing ppl build"
     make install
     assert_success $? "ERROR: making/installing ppl build"
@@ -923,7 +943,7 @@ if [ "x$SKIPGRAPHITE" == "x" ]; then
 
     # Make native cloog and install it
     echo `date` " Making all in $WORKING_DIR/win32-build/cloog and installing..." >> $LOGFILE
-    make all -j4
+    make all -j2
     assert_success $? "ERROR: making/installing cloog build"
     make install
     assert_success $? "ERROR: making/installing cloog build"
@@ -944,7 +964,7 @@ GCC_FOR_TARGET='pic32-gcc' CC_FOR_TARGET='pic32-gcc' CPP_FOR_TARGET='pic32-g++' 
 
 # Make native libelf and install it
 echo `date` " Making all in $WORKING_DIR/win32-build/libelf and installing..." >> $LOGFILE
-make all -j4
+make all -j2
 assert_success $? "ERROR: making/installing libelf build"
 make install
 assert_success $? "ERROR: making/installing libelf build"
@@ -963,7 +983,7 @@ CC=$MINGW32_HOST_PREFIX-gcc AR="$MINGW32_HOST_PREFIX-ar" RANLIB=$MINGW32_HOST_PR
 
 # Make win32 zlib and install it
 echo `date` " Making all in $WORKING_DIR/win32-build/zlib and installing..." >> $LOGFILE
-make all -j4
+make all -j2
 assert_success $? "ERROR: making/installing zlib build - all"
 make install
 assert_success $? "ERROR: making/installing zlib build - install"
@@ -1003,6 +1023,8 @@ assert_success $? "ERROR: making/installing win32 Canadian-cross compiler build"
 
 cd ..
 
+if [ "xSKIPMULTIPLENEWLIB" != x ]; then
+
 if [ -e newlib ]
 then
     rm -rf newlib
@@ -1020,13 +1042,15 @@ GCC_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc CC_FOR_TARGET
 
 echo `date` " Make newlib for win32-image..." >> $LOGFILE
 
-make all -j4
+make all -j2
 make all
 assert_success $? "ERROR: Make newlib for cross build"
 make install
 assert_success $? "ERROR: Install newlib for cross build"
 
 cd ..
+fi
+
 if [ -e gcc ]
 then
     rm -rf gcc
@@ -1041,7 +1065,7 @@ GCC_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc CC_FOR_TARGET
 assert_success $? "ERROR: configuring win3232 cross build 2"
 
 make all \
-GCC_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc CC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc -I$WORKING_DIR/chipKIT-cxx/src45x/gcc/ginclude" CXX_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ CPP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ AR_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ar RANLIB_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ranlib READELF_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-readelf STRIP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-strip AS_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as LD_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld  -j4
+GCC_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc CC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc -I$WORKING_DIR/chipKIT-cxx/src45x/gcc/ginclude" CXX_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ CPP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ AR_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ar RANLIB_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ranlib READELF_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-readelf STRIP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-strip AS_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as LD_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld  -j2
 make all \
 GCC_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc CC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc -I$WORKING_DIR/chipKIT-cxx/src45x/gcc/ginclude" CXX_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ CPP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ AR_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ar RANLIB_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ranlib READELF_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-readelf STRIP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-strip AS_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as LD_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld
 assert_success $? "ERROR: making win32 Canadian-cross compiler build"
@@ -1094,6 +1118,28 @@ if [ "x$LINUX32IMAGE" != "x" ] ; then
     rm -rf $WORKING_DIR/$LINUX32IMAGE/pic32-tools/libsrc
 fi
 
+if [ "x$SKIPPLIBIMAGE" == "x" ]
+then
+    cd $WORKING_DIR
+    echo "Downloading $GIT_PLIB_IMAGE_TAR."
+    echo `date` "Downloading $GIT_PLIB_IMAGE_TAR..." >> $LOGFILE
+    if [ -e plib-image ]
+    then
+        rm -rf plib-image
+    fi
+    curl -L $GIT_PLIB_IMAGE_TAR | tar zx
+    assert_success $? "Downloading the peripheral-library image from $GIT_PLIB_IMAGE_TAR"
+    
+    rsync -qavzC --include "*/" --include "*" plib-image/ $NATIVEIMAGE/pic32-tools/
+    assert_success $? "ERROR: Install plib in $NATIVEIMAGE"
+    rsync -qavzC --include "*/" --include "*" plib-image/ $LINUX32IMAGE/pic32-tools/
+    assert_success $? "ERROR: Install plib in $LINUX32IMAGE"
+    rsync -qavzC --include "*/" --include "*" plib-image/ win32-image/pic32-tools/
+    assert_success $? "ERROR: Install plib in win32-image"
+fi
+
+cd $WORKING_DIR
+
 echo "Making zip files"
 #ZIP installation directory.
 
@@ -1103,7 +1149,6 @@ cd $WORKING_DIR
 if [[ ! -e zips ]] ; then
     mkdir zips
 fi
-
 
 cd $WORKING_DIR
 
