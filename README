@@ -1,0 +1,101 @@
+ ***************************************************************************************
+ * chipKIT for Microchip PIC32 MCUs
+ *
+ * This software is developed by Microchip Technology Inc. and its
+ * subsidiaries ("Microchip").
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1.      Redistributions of source code must retain the above copyright
+ * notice, this list of conditions and the following disclaimer.
+ *
+ * 2.      Redistributions in binary form must reproduce the above copyright
+ * notice, this list of conditions and the following disclaimer in the
+ * documentation and/or other materials provided with the distribution.
+ *
+ * 3.      Microchip's name may not be used to endorse or promote products
+ * derived from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY MICROCHIP "AS IS" AND ANY EXPRESS OR IMPLIED
+ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL
+ * MICROCHIP BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING BUT NOT LIMITED TO
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA OR PROFITS;
+ * OR BUSINESS INTERRUPTION) HOWSOEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ ***************************************************************************************
+
+INTRODUCTION
+ 
+This project contains a BASH build script for the chipKIT Compiler for Microchip 
+Technology's PIC32 MCUs. The compiler is packaged with the chipKIT MPIDE, hosted at 
+<https://github.com/chipKIT32/chipKIT32-MAX>.
+
+*** This script is designed to run on Mac OS X 10.6 or 10.7. It should also run under 
+Linux, but it won't build the Mac version when run under Linux. ***
+
+It builds compilers for Mac OS X (Darwin), 32-bit Linux, and 32-bit Microsoft Windows 
+(minGW32).
+
+
+PREREQUISITES:
+
+1) Apple Xcode with GCC 4.2 and the Mac OS X 10.5 SDK.
+2) Linux 32-bit cross compiler (gcc 4.5.2, glibc 2.11.1) 
+   <http://crossgcc.rts-software.org/doku.php>
+3) MinGW32 4.3.0 <http://crossgcc.rts-software.org/doku.php>
+4) Other tools: rsync, curl, find, which, tar
+
+Once you've installed all of the compilers and tools listed above, make sure that they 
+are in your system path. You should be able to run 'which' in a terminal window to verify
+that they can be called.
+
+  $ which g++-4.2
+  /usr/bin/g++-4.2
+  $ which i586-pc-linux-g++
+  /usr/local/gcc-4.5.2-for-linux32/bin/i586-pc-linux-g++
+  $ which i386-mingw32-gcc
+  /usr/local/i386-mingw32-4.3.0/bin/i386-mingw32-gcc
+  $ which find
+  /usr/bin/find
+  $ which rsync
+  /usr/bin/rsync
+  $ which curl
+  /opt/local/bin/curl
+
+Optional:
+You may also wish to install growl and growl-notify so that you can more easily follow
+the build status as the script runs. Growl is available in the Mac App Store and 
+growl-notify is available from <http://growl.info/extras.php>.
+
+
+INSTRUCTIONS
+
+1) Download the chipKIT-cxx-build.sh BASH script from the github repository currently 
+   located at <https://github.com/jasonkajita/chipKIT-cxx-build>. Place the script in a 
+   new directory.
+   
+2) Make sure that the script has executable permissions
+   $ chmod +x chipKIT-cxx-build.sh
+   
+3) Execute the script
+   $ ./chipKIT-cxx-build.sh
+   
+The script should begin executing. It will create a new directory (by default named 
+chipKIT-cxx-master). Next, it will download all of the necessary source code and 
+begin compiling. You can track the status by opening the log file (usually named 
+chipKIT-cxx-master.log).
+
+When the script completes, the Mac, Linux, and Windows images will be located in the zips
+subdirectory as bzip2 compressed tar files. You will also find the original install images
+in directories named Darwin-image, Linux32-image, and win32-image.
+
+
+SUPPORT
+
+Please visit the chipKIT forums for support
+<http://www.chipkit.org/forum/>
