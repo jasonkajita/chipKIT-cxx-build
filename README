@@ -1,4 +1,4 @@
- ***************************************************************************************
+ *******************************************************************************
  * chipKIT for Microchip PIC32 MCUs
  *
  * This software is developed by Microchip Technology Inc. and its
@@ -27,7 +27,7 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- ***************************************************************************************
+ *******************************************************************************
 
 INTRODUCTION
  
@@ -50,9 +50,9 @@ PREREQUISITES:
 3) MinGW32 4.3.0 <http://crossgcc.rts-software.org/doku.php>
 4) Other tools: rsync, curl, find, which, tar
 
-Once you've installed all of the compilers and tools listed above, make sure that they 
-are in your system path. You should be able to run 'which' in a terminal window to verify
-that they can be called.
+Once you've installed all of the compilers and tools listed above, make sure that 
+they are in your system path. You should be able to run 'which' in a terminal window
+to verify that they can be called.
 
   $ which g++-4.2
   /usr/bin/g++-4.2
@@ -68,16 +68,16 @@ that they can be called.
   /opt/local/bin/curl
 
 Optional:
-You may also wish to install growl and growl-notify so that you can more easily follow
-the build status as the script runs. Growl is available in the Mac App Store and 
-growl-notify is available from <http://growl.info/extras.php>.
+You may also wish to install growl and growl-notify so that you can more easily 
+follow the build status as the script runs. Growl is available in the Mac App Store 
+and growl-notify is available from <http://growl.info/extras.php>.
 
 
 INSTRUCTIONS
 
-1) Download the chipKIT-cxx-build.sh BASH script from the github repository currently 
-   located at <https://github.com/jasonkajita/chipKIT-cxx-build>. Place the script in a 
-   new directory.
+1) Download the chipKIT-cxx-build.sh BASH script from the github repository 
+   currently located at <https://github.com/jasonkajita/chipKIT-cxx-build>. Place 
+   the script in a new directory.
    
 2) Make sure that the script has executable permissions
    $ chmod +x chipKIT-cxx-build.sh
@@ -90,9 +90,9 @@ chipKIT-cxx-master). Next, it will download all of the necessary source code and
 begin compiling. You can track the status by opening the log file (usually named 
 chipKIT-cxx-master.log).
 
-When the script completes, the Mac, Linux, and Windows images will be located in the zips
-subdirectory as bzip2 compressed tar files. You will also find the original install images
-in directories named Darwin-image, Linux32-image, and win32-image.
+When the script completes, the Mac, Linux, and Windows images will be located in the 
+zips subdirectory as bzip2 compressed tar files. You will also find the original 
+install images in directories named Darwin-image, Linux32-image, and win32-image.
 
 
 SUPPORT
