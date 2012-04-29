@@ -1,7 +1,7 @@
 #!/bin/bash
 
 SOURCE_GITHUB_ACCOUNT=jasonkajita
-PLIB_IMAGE_TAR=plib-image-20120208.tar.bz2
+PLIB_IMAGE_TAR=plib-image-20120428.tar.bz2
 
 GIT_CHIPKIT_CXX_REPO_ROOT=https://github.com/$SOURCE_GITHUB_ACCOUNT/chipKIT-cxx/tarball
 GIT_PIC32_PART_SUPPORT_REPO_ROOT=https://github.com/$SOURCE_GITHUB_ACCOUNT/pic32-part-support/tarball
