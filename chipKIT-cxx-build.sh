@@ -523,7 +523,7 @@ if [ "x$SKIPNATIVE" == "x" ] ; then
       rsync -qavzC --include "*/" --include "*" export-image/pic32-tools/ win32-image/pic32-tools/
       assert_success $? "ERROR: Install newlib in win32-image"
     fi
-    
+
     cd native-build
 
     if [ -e gcc ]
@@ -562,7 +562,7 @@ if [ "x$SKIPNATIVE" == "x" ] ; then
     cd $NATIVEIMAGE/pic32-tools
     if [ "x$NATIVEIMAGE" == "xDarwin-image" ] ; then
         find . -type f -perm -g+x -follow | xargs file | grep Mach-O | cut -d: -f1 | xargs $DEVELOPERDIR/usr/bin/strip
-    else if [ "x$LINUX32_HOST_PREFIX" != "x" ] ; then
+    elif [ "x$LINUX32_HOST_PREFIX" != "x" ] ; then
         find . -type f -perm -g+x -follow | xargs file | grep ELF | cut -d: -f1 | xargs $LINUX32_HOST_PREFIX-strip
     fi
     cd $WORKING_DIR
@@ -655,7 +655,7 @@ if [ "x$SKIPLINUX32" == "x" ] ; then
         echo `date` " Making all in $WORKING_DIR/linux32-build/binutils and installing..." >> $LOGFILE
         make all CFLAGS="-O2 -DCHIPKIT_PIC32" -j2
         assert_success $? "ERROR: making/installing linux32 Canadian-cross binutils build"
-        make CFLAGS="-O2 -DCHIPKIT_PIC32" install 
+        make CFLAGS="-O2 -DCHIPKIT_PIC32" install
         assert_success $? "ERROR: making/installing linux32 Canadian-cross binutils build"
 
         cd ..
@@ -793,7 +793,7 @@ if [ "x$SKIPLINUX32" == "x" ] ; then
         assert_success $? "ERROR: making/installing linux Canadian-cross compiler build"
 
         cd ..
-        
+
         if [ "xSKIPMULTIPLENEWLIB" != x ]; then
 
         if [ -e newlib ]
@@ -821,7 +821,7 @@ if [ "x$SKIPLINUX32" == "x" ] ; then
 
         cd ..
         fi
-        
+
         if [ -e gcc ]
         then
             rm -rf gcc
@@ -1077,7 +1077,7 @@ cd gcc
 
 echo `date` " Configure gcc after making Newlib for win32-image..." >> $LOGFILE
 GCC_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc CC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc -I$WORKING_DIR/chipKIT-cxx/src45x/gcc/ginclude" CXX_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ CPP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ AR_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ar RANLIB_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ranlib READELF_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-readelf STRIP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-strip AS_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as LD_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld ../../chipKIT-cxx/src45x/gcc/configure target_alias=pic32- $BUILDMACHINE --host=$MINGW32_HOST_PREFIX --target=pic32mx --program-prefix=pic32- --disable-threads --disable-libmudflap --disable-libssp --disable-libstdcxx-pch --enable-sgxx-sde-multilibs --disable-threads --with-gnu-as --with-gnu-ld --disable-sim --disable-bootstrap  --disable-sjlj-exceptions --enable-obsolete --disable-__cxa_atexit --disable-libfortran --enable-languages=c,c++ --disable-shared --with-newlib --disable-nls --prefix=$WORKING_DIR/win32-image/pic32-tools --disable-libgomp --disable-libffi --enable-poison-system-directories --libexecdir=$WORKING_DIR/win32-image/pic32-tools/pic32mx/bin --with-dwarf2 --with-libelf=$WORKING_DIR/win32-build/host-libs --with-gmp=$WORKING_DIR/win32-build/host-libs --with-bugurl=http://www.chipkit.org/forums XGCC_FLAGS_FOR_TARGET="-fno-rtti -fno-enforce-eh-specs" --enable-cxx-flags="-fno-exceptions -ffunction-sections" --with-ppl=$WORKING_DIR/win32-build/host-libs --with-cloog=$WORKING_DIR/win32-build/host-libs
-#"--with-host-libstdcxx=-static-libgcc -Wl,-Bstatic,-lstdc++,-Bdynamic -lm" 
+#"--with-host-libstdcxx=-static-libgcc -Wl,-Bstatic,-lstdc++,-Bdynamic -lm"
 assert_success $? "ERROR: configuring win3232 cross build 2"
 
 make CFLAGS="-O2 -DCHIPKIT_PIC32" all \
@@ -1145,7 +1145,7 @@ then
     fi
     curl -L $GIT_PLIB_IMAGE_TAR | tar jx
     assert_success $? "Downloading the peripheral-library image from $GIT_PLIB_IMAGE_TAR"
-    
+
     if [ "x$NATIVEIMAGE" != "x" ]
     then
       rsync -qavzC --include "*/" --include "*" plib-image/ $NATIVEIMAGE/pic32-tools/
