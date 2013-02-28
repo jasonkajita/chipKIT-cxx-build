@@ -1096,7 +1096,7 @@ unset CPP
 unset CXX
 
 cd $WORKING_DIR/win32-image/pic32-tools
-#find . -type f -name "*.exe" | xargs $MINGW_HOST_PREFIX-strip
+find . -type f -name "*.exe" | xargs $MINGW_HOST_PREFIX-strip
 
 status_update "Make minGW32 Canadian cross build complete"
 
