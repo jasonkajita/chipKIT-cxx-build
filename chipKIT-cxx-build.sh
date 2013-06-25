@@ -10,6 +10,16 @@ GIT_PLIB_IMAGE_TAR=https://github.com/downloads/$SOURCE_GITHUB_ACCOUNT/pic32-par
 
 ##############
 
+NEWLIB_CONFIGURE_FLAGS="--target=pic32mx --enable-target-optspace --disable-threads --enable-static --disable-libmudflap --disable-libssp --disable-libstdcxx-pch --disable-hosted-libstdcxx --with-arch=pic32mx --enable-sgxx-sde-multilib --with-gnu-as --with-gnu-ld --enable-languages=c,c++ --disable-shared --disable-nls --with-dwarf2 --disable-bootstrap --enable-obsolete --disable-sjlj-exceptions --disable-__cxa_atexit --disable-libfortran --with-bugurl=http://chipkit.org/forum --disable-libgomp --disable-libffi --program-prefix=pic32- --with-newlib --enable-newlib-io-long-long --disable-newlib-multithread --disable-libgloss --disable-newlib-supplied-syscalls --disable-nls --disable-libunwind-exceptions --enable-libstdcxx-allocator=malloc --disable-newlib-atexit-alloc --disable-libstdcxx-verbose"
+
+GCC_CONFIGURE_FLAGS="--enable-target-optspace --disable-libunwind-exceptions --disable-sjlj-exceptions --enable-libstdcxx-allocator=malloc --disable-hosted-libstdcxx --target=pic32mx --enable-target-optspace --program-prefix=pic32- --disable-threads --disable-libmudflap --disable-libssp --enable-sgxx-sde-multilibs --with-gnu-as --with-gnu-ld --enable-languages=c,c++ --disable-shared --enable-static --with-newlib --disable-nls --disable-libgomp --without-headers --disable-libffi --disable-bootstrap --disable-decimal-float --disable-libquadmath --disable-__cxa_atexit --disable-libfortran --disable-libstdcxx-pch --with-dwarf2 --disable-lto --disable-libstdcxx-verbose --enable-poison-system-directories  --with-bugurl=http://www.chipkit.org/forums"
+
+CFLAGS_FOR_TARGET="-G 0 -fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections -DSMALL_MEMORY -D_NO_GETLOGIN -D_NO_GETPWENT -D_NO_GETUT -D_NO_GETPASS -D_NO_SIGSET"
+
+CCASFLAGS_FOR_TARGET="-G 0 -fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections -DSMALL_MEMORY -D_NO_GETLOGIN -D_NO_GETPWENT -D_NO_GETUT -D_NO_GETPASS -D_NO_SIGSET"
+
+XGCC_FLAGS_FOR_TARGET="-G 0 -fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections -DSMALL_MEMORY -D_NO_GETLOGIN -D_NO_GETPWENT -D_NO_GETUT -D_NO_GETPASS -D_NO_SIGSET"
+
 echo "$BASH_SOURCE START BUILD..."
 # Figure out which MinGW compiler we have. Candidates are:
 # i586-mingw32msvc-gcc   (Ubuntu)
@@ -23,8 +33,9 @@ if [ "x$MINGW32_HOST_PREFIX" == "x" ]; then
     fi
     unset MINGW32_GCC
 fi
-unset MINGW32_HOST_PREFIX
-MINGW32_HOST_PREFIX=arm-unknown-linux-gnueabi
+
+unset ARMLINUX32_HOST_PREFIX
+ARMLINUX32_HOST_PREFIX=arm-unknown-linux-gnueabi
 
 # Does notify-send exist?
 if [ "x$NOTIFY_SEND" == "x" ] ; then
@@ -66,6 +77,15 @@ NATIVEIMAGE=`uname`
 NATIVEIMAGE+="-image"
 echo "Native image is $NATIVEIMAGE"
 
+NM_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-nm"
+RANLIB_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ranlib"
+STRIP_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-strip"
+AR_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ar"
+AS_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as"
+LD_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld"
+GCC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc"
+CC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc"
+CFLAGS="-Os -DCHIPKIT_PIC32"
 
 # Process the arguments
 while getopts b:FNt:Q opt
@@ -81,7 +101,7 @@ do
         BUILD=pic32-$TVAL-$DATE
         ;;
       N)
-        echo "No checkout"
+        cdecho "No checkout"
         CHECKOUT="no"
         ;;
      \?) show_usage ;;
@@ -293,6 +313,10 @@ echo "make DESTROOT=\"$WORKING_DIR/win32-image/pic32-tools\" install-headers"
 make DESTROOT="$WORKING_DIR/win32-image/pic32-tools" install-headers
 assert_success $? "ERROR: Making headers into cross compiler's win32-image install image directory"
 
+echo "make DESTROOT=\"$WORKING_DIR/arm-linux-image/pic32-tools\" install-headers"
+make DESTROOT="$WORKING_DIR/arm-linux-image/pic32-tools" install-headers
+assert_success $? "ERROR: Making headers into cross compiler's arm-linux-image install image directory"
+
 if [ "x$LINUX32IMAGE" != "x" ]; then
     make DESTROOT="$WORKING_DIR/$LINUX32IMAGE" install-headers
     assert_success $? "ERROR: Making headers into cross compiler's $LINUX32IMAGE install image directory"
@@ -382,7 +406,7 @@ if [ "x$SKIPNATIVE" == "x" ] ; then
 
         # Make native ppl and install it
         echo `date` " Making all in $WORKING_DIR/native-build/ppl and installing..." >> $LOGFILE
-        make all -j5
+        make all -j4 
         assert_success $? "ERROR: making/installing ppl build"
         make install
         assert_success $? "ERROR: making/installing ppl build"
@@ -403,7 +427,7 @@ if [ "x$SKIPNATIVE" == "x" ] ; then
 
         # Make native cloog and install it
         echo `date` " Making all in $WORKING_DIR/native-build/cloog and installing..." >> $LOGFILE
-        make all -j5
+        make all -j4
         assert_success $? "ERROR: making/installing cloog build"
         make install
         assert_success $? "ERROR: making/installing cloog build"
@@ -425,7 +449,7 @@ if [ "x$SKIPNATIVE" == "x" ] ; then
 
     # Make native libelf and install it
     echo `date` " Making all in $WORKING_DIR/native-build/libelf and installing..." >> $LOGFILE
-    make all -j5
+    make all -j4
     assert_success $? "ERROR: making/installing libelf build"
     make install
     assert_success $? "ERROR: making/installing libelf build"
@@ -444,7 +468,7 @@ if [ "x$SKIPNATIVE" == "x" ] ; then
 
     # Make native zlib and install it
     echo `date` " Making all in $WORKING_DIR/native-build/zlib and installing..." >> $LOGFILE
-    make all -j5
+    make all -j4
     assert_success $? "ERROR: making/installing zlib build"
     make install
     assert_success $? "ERROR: making/installing zlib build"
@@ -463,6 +487,7 @@ if [ "x$SKIPNATIVE" == "x" ] ; then
     # Configure cross compiler
     echo `date` " Configuring cross compiler build in $WORKING_DIR/native-build..." >> $LOGFILE
     echo AR_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ar" AS_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as" LD_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld" ../../chipKIT-cxx/src45x/gcc/configure --target=pic32mx --program-prefix=pic32- --disable-threads --disable-libmudflap --disable-libssp --enable-sgxx-sde-multilibs --with-gnu-as --with-gnu-ld --enable-languages=c,c++ --disable-shared --enable-static --with-newlib --disable-nls --disable-libgomp --without-headers --disable-libffi --disable-bootstrap --disable-decimal-float --disable-libquadmath --disable-__cxa_atexit --disable-libfortran --disable-libstdcxx-pch --prefix="$WORKING_DIR/$NATIVEIMAGE/pic32-tools" --libexecdir="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin" --with-dwarf2 --with-gmp="$WORKING_DIR/native-build/host-libs" "$LIBHOST" --disable-lto  --with-bugurl=http://www.chipkit.org/forums  XGCC_FLAGS_FOR_TARGET="-fno-rtti -fno-enforce-eh-specs" --enable-cxx-flags="-fno-exceptions -ffunction-sections" > gcc-native-log.txt
+
     AR_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ar" AS_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as" LD_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld" ../../chipKIT-cxx/src45x/gcc/configure --target=pic32mx --program-prefix=pic32- --disable-threads --disable-libmudflap --disable-libssp --enable-sgxx-sde-multilibs --with-gnu-as --with-gnu-ld --enable-languages=c,c++ --disable-shared --enable-static --with-newlib --disable-nls --disable-libgomp --without-headers --disable-libffi --disable-bootstrap --disable-decimal-float --disable-libquadmath --disable-__cxa_atexit --disable-libfortran --disable-libstdcxx-pch --prefix="$WORKING_DIR/$NATIVEIMAGE/pic32-tools" --libexecdir="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin" --with-dwarf2 --with-gmp="$WORKING_DIR/native-build/host-libs" "$LIBHOST" --disable-lto  --with-bugurl=http://www.chipkit.org/forums  XGCC_FLAGS_FOR_TARGET="-fno-rtti -fno-enforce-eh-specs" --enable-cxx-flags="-fno-exceptions -ffunction-sections"  >> gcc-native-log.txt
     assert_success $? "ERROR: configuring cross build"
 
@@ -481,8 +506,9 @@ if [ "x$SKIPNATIVE" == "x" ] ; then
     STRIP_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-strip"  \
     AR_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ar"  \
     AS_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as" \
-    LD_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld"
+    LD_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld" -j4
     assert_success $? "ERROR: making/installing cross build all-gcc"
+
     make CFLAGS="-O2 -DCHIPKIT_PIC32" install-gcc
     assert_success $? "ERROR: making/installing cross build install-gcc"
 
@@ -499,11 +525,10 @@ if [ "x$SKIPNATIVE" == "x" ] ; then
     status_update "Building newlib"
 
     #build newlib here
-    GCC_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc CC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc -I$WORKING_DIR/chipKIT-cxx/src45x/gcc/ginclude" CXX_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ CPP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ AR_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ar RANLIB_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ranlib READELF_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-readelf STRIP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-strip AS_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as LD_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld ../../pic32-newlib/configure --target=pic32mx --disable-threads --enable-static --disable-libmudflap --disable-libssp --disable-libstdcxx-pch  --with-arch=pic32mx --enable-sgxx-sde-multilib --with-gnu-as --with-gnu-ld --enable-languages=c,c++ --disable-shared --disable-nls --with-dwarf2 --disable-bootstrap --enable-obsolete --disable-sjlj-exceptions --disable-__cxa_atexit --disable-libfortran --prefix=$WORKING_DIR/export-image/pic32-tools --libexecdir=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin --with-bugurl=http://chipkit.org/forum --disable-libgomp --disable-libffi --program-prefix=pic32- --with-newlib --enable-newlib-io-long-long --enable-newlib-register-fini --disable-newlib-multithread --disable-libgloss --disable-newlib-supplied-syscalls --disable-nls XGCC_FLAGS_FOR_TARGET="-fno-rtti -fno-enforce-eh-specs" --enable-cxx-flags="-fno-exceptions -ffunction-sections"
+    GCC_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc CC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc -I$WORKING_DIR/chipKIT-cxx/src45x/gcc/ginclude" CXX_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ CPP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ AR_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ar RANLIB_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ranlib READELF_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-readelf STRIP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-strip AS_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as LD_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld ../../pic32-newlib/configure $NEWLIB_CONFIGURE_FLAGS  --prefix=$WORKING_DIR/$NATIVEIMAGE/pic32-tools --libexecdir=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin CFLAGS_FOR_TARGET="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections -DSMALL_MEMORY -D_NO_GETLOGIN -D_NO_GETPWENT -D_NO_GETUT -D_NO_GETPASS -D_NO_SIGSET" CCASFLAGS_FOR_TARGET="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections -DSMALL_MEMORY -D_NO_GETLOGIN -D_NO_GETPWENT -D_NO_GETUT -D_NO_GETPASS -D_NO_SIGSET" XGCC_FLAGS_FOR_TARGET="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections" --enable-cxx-flags="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections"
     assert_success $? "ERROR: Configure Newlib for native build"
 
-    make all -j5
-    make all
+    make all -j4 CFLAGS_FOR_TARGET="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections -DSMALL_MEMORY -D_NO_GETLOGIN -D_NO_GETPWENT -D_NO_GETUT -D_NO_GETPASS -D_NO_SIGSET" CCASFLAGS_FOR_TARGET="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections -DSMALL_MEMORY -D_NO_GETLOGIN -D_NO_GETPWENT -D_NO_GETUT -D_NO_GETPASS -D_NO_SIGSET" XGCC_FLAGS_FOR_TARGET="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections"
     assert_success $? "ERROR: Make newlib for native build"
     make install
     assert_success $? "ERROR: Install newlib for native build"
@@ -524,7 +549,11 @@ if [ "x$SKIPNATIVE" == "x" ] ; then
       rsync -qavzC --include "*/" --include "*" export-image/pic32-tools/ win32-image/pic32-tools/
       assert_success $? "ERROR: Install newlib in win32-image"
     fi
-
+    if [ -e arm-linux-image ]
+    then
+      rsync -qavzC --include "*/" --include "*" export-image/pic32-tools/ arm-linux-image/pic32-tools/
+      assert_success $? "ERROR: Install newlib in arm-linux-image"
+    fi
     cd native-build
 
     if [ -e gcc ]
@@ -536,17 +565,17 @@ if [ "x$SKIPNATIVE" == "x" ] ; then
 
     cd gcc
 
-    GCC_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc CC_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc CPP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ AR_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ar AS_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as LD_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld ../../chipKIT-cxx/src45x/gcc/configure --target=pic32mx --disable-threads --enable-static --disable-libmudflap --disable-libssp --disable-libstdcxx-pch  --with-arch=pic32mx --enable-sgxx-sde-multilib --with-gnu-as --with-gnu-ld --enable-languages=c,c++ --disable-shared --disable-nls --with-dwarf2 --disable-bootstrap --enable-obsolete --disable-sjlj-exceptions --disable-__cxa_atexit --disable-libfortran --prefix=$WORKING_DIR/$NATIVEIMAGE/pic32-tools --libexecdir=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin --with-gmp="$WORKING_DIR/native-build/host-libs" "$LIBHOST" --with-bugurl=http://chipkit.org/forum --disable-libgomp --disable-libffi --program-prefix=pic32- --with-newlib XGCC_FLAGS_FOR_TARGET="-fno-rtti -fno-enforce-eh-specs" --enable-cxx-flags="-fno-exceptions -ffunction-sections" CFLAGS_FOR_BUILD="-O3" --enable-poison-system-directories
+    GCC_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc CC_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc CPP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ AR_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ar AS_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as LD_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld ../../chipKIT-cxx/src45x/gcc/configure $GCC_CONFIGURE_FLAGS --prefix=$WORKING_DIR/$NATIVEIMAGE/pic32-tools --libexecdir=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin --with-gmp="$WORKING_DIR/native-build/host-libs" "$LIBHOST" CFLAGS_FOR_TARGET="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections" XGCC_FLAGS_FOR_TARGET="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections" --enable-cxx-flags="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections" CFLAGS_FOR_BUILD="-Os"
     assert_success $? "ERROR: Configure gcc after Newlib for native build"
 
     make all \
+    CXXFLAGS="$CFLAGS_FOR_TARGET" \
     NM_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-nm" \
     RANLIB_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ranlib" \
     STRIP_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-strip"  \
     AR_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ar"  \
     AS_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as" \
     LD_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld" -j5
-    make all
     assert_success $? "ERROR: making/installing cross build all"
     make install
     assert_success $? "ERROR: making/installing cross build install"
@@ -609,6 +638,8 @@ if [ "x$SKIPLIBS" == "x" ] ; then
     assert_success $? "ERROR: making libraries for export-image cross build"
     make DESTROOT="$WORKING_DIR/win32-image/pic32-tools" install -j5
     assert_success $? "ERROR: making libraries for win32-image cross build"
+    make DESTROOT="$WORKING_DIR/arm-linux-image/pic32-tools" install -j4
+    assert_success $? "ERROR: making libraries for arm-linux-image cross build"
 
     status_update "cross-compiler library build complete"
 
@@ -775,7 +806,7 @@ if [ "x$SKIPLINUX32" == "x" ] ; then
         # Configure linux cross compiler
         echo `date` " Configuring linux cross compiler build in $WORKING_DIR/linux32-build..." >> $LOGFILE
 
-        AR_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32mx/bin/ar" AS_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32mx/bin/as" LD_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32mx/bin/ld" GCC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/bin/pic32-gcc" CC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/bin/pic32-gcc" CXX_FOR_TARGET='pic32-gcc' target_alias=pic32- ../../chipKIT-cxx/src45x/gcc/configure $BUILDMACHINE --host=$LINUX32_HOST_PREFIX --target=pic32mx --program-prefix=pic32- --disable-threads --disable-libmudflap --disable-libssp --disable-libstdcxx-pch --enable-sgxx-sde-multilibs --disable-threads --with-gnu-as --with-gnu-ld --disable-sim --disable-bootstrap --enable-obsolete --disable-__cxa_atexit --disable-libfortran --enable-languages=c,c++ --disable-shared --with-newlib --disable-nls --prefix=$WORKING_DIR/$LINUX32IMAGE/pic32-tools --disable-libgomp --without-headers --disable-libffi --enable-poison-system-directories --libexecdir=$WORKING_DIR/$LINUX32IMAGE/pic32-tools/pic32mx/bin --with-dwarf2 "--with-host-libstdcxx=-static-libgcc -Wl,-Bstatic,-lstdc++,-Bdynamic -lm" --with-libelf=$WORKING_DIR/linux32-build/linux-libs --with-gmp=$WORKING_DIR/linux32-build/linux-libs --with-ppl=$WORKING_DIR/linux32-build/linux-libs --with-cloog=$WORKING_DIR/linux32-build/linux-libs --with-bugurl=http://www.chipkit.org/forums XGCC_FLAGS_FOR_TARGET="-fno-rtti -fno-enforce-eh-specs" --enable-cxx-flags="-fno-exceptions -ffunction-sections"
+        AR_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32mx/bin/ar" AS_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32mx/bin/as" LD_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32mx/bin/ld" GCC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/bin/pic32-gcc" CC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/bin/pic32-gcc" CXX_FOR_TARGET='pic32-gcc' target_alias=pic32- ../../chipKIT-cxx/src45x/gcc/configure $GCC_CONFIGURE_FLAGS $BUILDMACHINE --prefix="$WORKING_DIR/$LINUX32IMAGE/pic32-tools" --libexecdir="$WORKING_DIR/$LINUX32IMAGE/pic32-tools/pic32mx/bin" --host=$LINUX32_HOST_PREFIX "--with-host-libstdcxx=-static-libgcc -Wl,-Bstatic,-lstdc++,-Bdynamic -lm" --with-libelf=$WORKING_DIR/linux32-build/linux-libs --with-gmp=$WORKING_DIR/linux32-build/linux-libs --with-ppl=$WORKING_DIR/linux32-build/linux-libs --with-cloog=$WORKING_DIR/linux32-build/linux-libs CFLAGS_FOR_TARGET="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections" XGCC_FLAGS_FOR_TARGET="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections" --enable-cxx-flags="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections"
         assert_success $? "ERROR: configuring linux32 cross build"
 
         # Make cross compiler and install it
@@ -810,14 +841,14 @@ if [ "x$SKIPLINUX32" == "x" ] ; then
 
         #build newlib here
 
-        GCC_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc CC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc -I$WORKING_DIR/chipKIT-cxx/src45x/gcc/ginclude" CXX_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ CPP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ AR_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ar RANLIB_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ranlib READELF_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-readelf STRIP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-strip AS_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as LD_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld ../../pic32-newlib/configure --target=pic32mx --disable-threads --enable-static --disable-libmudflap --disable-libssp --disable-libstdcxx-pch  --with-arch=pic32mx --enable-sgxx-sde-multilib --with-gnu-as --with-gnu-ld --enable-languages=c,c++ --disable-shared --disable-nls --with-dwarf2 --disable-bootstrap --enable-obsolete --disable-sjlj-exceptions --disable-__cxa_atexit --disable-libfortran --prefix=$WORKING_DIR/$LINUX32IMAGE/pic32-tools --libexecdir=$WORKING_DIR/$LINUX32IMAGE/pic32-tools/pic32mx/bin --with-bugurl=http://chipkit.org/forum --disable-libgomp --disable-libffi --program-prefix=pic32- --with-newlib --enable-newlib-io-long-long --enable-newlib-register-fini --disable-newlib-multithread --disable-libgloss --disable-newlib-supplied-syscall XGCC_FLAGS_FOR_TARGET="-fno-rtti -fno-enforce-eh-specs" --enable-cxx-flags="-fno-exceptions -ffunction-sections"
+        GCC_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc CC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc -I$WORKING_DIR/chipKIT-cxx/src45x/gcc/ginclude" CXX_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ CPP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ AR_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ar RANLIB_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ranlib READELF_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-readelf STRIP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-strip AS_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as LD_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld ../../pic32-newlib/configure  $NEWLIB_CONFIGURE_FLAGS --prefix=$WORKING_DIR/$LINUX32IMAGE/pic32-tools --libexecdir=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin CFLAGS_FOR_TARGET="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections -DSMALL_MEMORY -D_NO_GETLOGIN -D_NO_GETPWENT -D_NO_GETUT -D_NO_GETPASS -D_NO_SIGSET" CCASFLAGS_FOR_TARGET="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections -DSMALL_MEMORY -D_NO_GETLOGIN -D_NO_GETPWENT -D_NO_GETUT -D_NO_GETPASS -D_NO_SIGSET" XGCC_FLAGS_FOR_TARGET="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections" --enable-cxx-flags="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections"
 
         echo `date` " Make newlib for $LINUX32IMAGE..." >> $LOGFILE
 
-        make CFLAGS="-O2 -DCHIPKIT_PIC32" all -j5
-        make CFLAGS="-O2 -DCHIPKIT_PIC32" all
+        make all -j4 CFLAGS_FOR_TARGET="-DCHIPKIT_PIC32 -fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections -DSMALL_MEMORY -D_NO_GETLOGIN -D_NO_GETPWENT -D_NO_GETUT -D_NO_GETPASS -D_NO_SIGSET" CCASFLAGS_FOR_TARGET="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections -DSMALL_MEMORY -D_NO_GETLOGIN -D_NO_GETPWENT -D_NO_GETUT -D_NO_GETPASS -D_NO_SIGSET" XGCC_FLAGS_FOR_TARGET="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections"
+
         assert_success $? "ERROR: Make newlib for cross build"
-        make CFLAGS="-O2 -DCHIPKIT_PIC32" install
+        make CFLAGS="-Os -DCHIPKIT_PIC32" install
         assert_success $? "ERROR: Install newlib for cross build"
 
         cd ..
@@ -833,14 +864,11 @@ if [ "x$SKIPLINUX32" == "x" ] ; then
         cd gcc
 
         echo `date` " Configure gcc after making Newlib for $LINUX32IMAGE..." >> $LOGFILE
-        GCC_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc CC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc -I$WORKING_DIR/chipKIT-cxx/src45x/gcc/ginclude" CXX_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ CPP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ AR_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ar RANLIB_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ranlib READELF_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-readelf STRIP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-strip AS_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as LD_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld ../../chipKIT-cxx/src45x/gcc/configure target_alias=pic32- $BUILDMACHINE --host=$LINUX32_HOST_PREFIX --target=pic32mx --program-prefix=pic32- --disable-threads --disable-libmudflap --disable-libssp --disable-libstdcxx-pch --enable-sgxx-sde-multilibs --disable-threads --with-gnu-as --with-gnu-ld --disable-sim --disable-bootstrap  --disable-sjlj-exceptions --enable-obsolete --disable-__cxa_atexit --disable-libfortran --enable-languages=c,c++ --disable-shared --with-newlib --disable-nls --prefix=$WORKING_DIR/$LINUX32IMAGE/pic32-tools --disable-libgomp --disable-libffi --enable-poison-system-directories --libexecdir=$WORKING_DIR/$LINUX32IMAGE/pic32-tools/pic32mx/bin --with-dwarf2 "--with-host-libstdcxx=-static-libgcc -Wl,-Bstatic,-lstdc++,-Bdynamic -lm" --with-libelf=$WORKING_DIR/linux32-build/linux-libs --with-gmp=$WORKING_DIR/linux32-build/linux-libs --with-ppl=$WORKING_DIR/linux32-build/linux-libs --with-cloog=$WORKING_DIR/linux32-build/linux-libs --with-bugurl=http://www.chipkit.org/forums XGCC_FLAGS_FOR_TARGET="-fno-rtti -fno-enforce-eh-specs" --enable-cxx-flags="-fno-exceptions -ffunction-sections"
+        GCC_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc CC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc -I$WORKING_DIR/chipKIT-cxx/src45x/gcc/ginclude" CXX_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ CPP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ AR_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ar RANLIB_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ranlib READELF_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-readelf STRIP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-strip AS_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as LD_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld ../../chipKIT-cxx/src45x/gcc/configure $GCC_CONFIGURE_FLAGS $BUILDMACHINE --host=$LINUX32_HOST_PREFIX --prefix=$WORKING_DIR/$LINUX32IMAGE/pic32-tools --libexecdir=$WORKING_DIR/$LINUX32IMAGE/pic32-tools/pic32mx/bin --with-dwarf2 "--with-host-libstdcxx=-static-libgcc -Wl,-Bstatic,-lstdc++,-Bdynamic -lm" --with-libelf=$WORKING_DIR/linux32-build/linux-libs --with-gmp=$WORKING_DIR/linux32-build/linux-libs --with-ppl=$WORKING_DIR/linux32-build/linux-libs --with-cloog=$WORKING_DIR/linux32-build/linux-libs CFLAGS_FOR_TARGET="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections" XGCC_FLAGS_FOR_TARGET="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections" --enable-cxx-flags="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections"
         assert_success $? "ERROR: configuring linux32 cross build 2"
 
         make CFLAGS="-O2 -DCHIPKIT_PIC32" all \
-        GCC_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc CC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc -I$WORKING_DIR/chipKIT-cxx/src45x/gcc/ginclude" CXX_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ CPP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ AR_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ar RANLIB_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ranlib READELF_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-readelf STRIP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-strip AS_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as LD_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld  -j5
-        make CFLAGS="-O2 -DCHIPKIT_PIC32" all \
-        GCC_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc CC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc -I$WORKING_DIR/chipKIT-cxx/src45x/gcc/ginclude" CXX_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ CPP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ AR_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ar RANLIB_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ranlib READELF_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-readelf STRIP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-strip AS_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as LD_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld
-        assert_success $? "ERROR: making linux Canadian-cross compiler build"
+        GCC_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc CC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc -I$WORKING_DIR/chipKIT-cxx/src45x/gcc/ginclude" CXX_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ CPP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ AR_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ar RANLIB_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ranlib READELF_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-readelf STRIP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-strip AS_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as LD_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld  -j4
         make CFLAGS="-O2 -DCHIPKIT_PIC32" install
         assert_success $? "ERROR: installing linux Canadian-cross compiler build"
 
@@ -868,6 +896,7 @@ cd $WORKING_DIR
 
 ################ end build linux compiler ##############
 
+################ Begin build win32 compiler ##############
 # Build mingw32 cross compiler
 echo `date` " Creating cross build in $WORKING_DIR/win32-build..." >> $LOGFILE
 if [ -e win32-build ]
@@ -895,7 +924,7 @@ assert_success $? "ERROR: configuring win32 binutils build"
 
 # Make MinGW32-cross binutils and install it
 echo `date` " Making all in $WORKING_DIR/win32-build/binutils and installing..." >> $LOGFILE
-make CFLAGS="-O2 -DCHIPKIT_PIC32 -D_WIN32_WINNT=0x0501 -DWINVER=0x501" all -j5
+make CFLAGS="-O2 -DCHIPKIT_PIC32 -D_WIN32_WINNT=0x0501 -DWINVER=0x501" all -j4
 assert_success $? "ERROR: making/installing win32 Canadian-cross binutils build"
 make CFLAGS="-O2 -DCHIPKIT_PIC32 -D_WIN32_WINNT=0x0501 -DWINVER=0x501" install
 assert_success $? "ERROR: making/installing win32 Canadian-cross binutils build"
@@ -915,7 +944,7 @@ CPPFLAGS="-fexceptions" ../../chipKIT-cxx/src45x/gmp/configure --enable-cxx --pr
 
 # Make win32 gmp and install it
 echo `date` " Making all in $WORKING_DIR/win32-build/gmp and installing..." >> $LOGFILE
-make CPPFLAGS="-fexceptions" all -j5
+make CPPFLAGS="-fexceptions" all -j4
 assert_success $? "ERROR: making/installing gmp build"
 make install
 assert_success $? "ERROR: making/installing gmp build"
@@ -937,7 +966,7 @@ if [ "x$SKIPGRAPHITE" == "x" ]; then
 
     # Make native ppl and install it
     echo `date` " Making all in $WORKING_DIR/win32-build/ppl and installing..." >> $LOGFILE
-    make all -j5
+    make all -j4
     assert_success $? "ERROR: making/installing ppl build"
     make install
     assert_success $? "ERROR: making/installing ppl build"
@@ -958,7 +987,7 @@ if [ "x$SKIPGRAPHITE" == "x" ]; then
 
     # Make native cloog and install it
     echo `date` " Making all in $WORKING_DIR/win32-build/cloog and installing..." >> $LOGFILE
-    make all -j5
+    make all -j4
     assert_success $? "ERROR: making/installing cloog build"
     make install
     assert_success $? "ERROR: making/installing cloog build"
@@ -975,11 +1004,11 @@ assert_success $? "ERROR: creating directory $WORKING_DIR/win32-build/libelf"
 
 cd libelf
 echo `date` " Configuring native libelf build in $WORKING_DIR/win32-build/libelf..." >> $LOGFILE
-GCC_FOR_TARGET='pic32-gcc' CC_FOR_TARGET='pic32-gcc' CPP_FOR_TARGET='pic32-g++' AS_FOR_TARGET=pic32-as LD_FOR_TARGET=pic32-ld CFLAGS_FOR_BUILD="-O2" ../../chipKIT-cxx/src45x/libelf/configure  --prefix=$WORKING_DIR/win32-build/host-libs --host=$MINGW32_HOST_PREFIX $BUILDMACHINE --target=pic32mx --disable-shared --disable-debug --disable-nls
+GCC_FOR_TARGET='pic32-gcc' CC_FOR_TARGET='pic32-gcc' CPP_FOR_TARGET='pic32-g++' AS_FOR_TARGET=pic32-as LD_FOR_TARGET=pic32-ld CFLAGS_FOR_BUILD="-Os" ../../chipKIT-cxx/src45x/libelf/configure  --prefix=$WORKING_DIR/win32-build/host-libs --host=$MINGW32_HOST_PREFIX $BUILDMACHINE --target=pic32mx --disable-shared --disable-debug --disable-nls
 
 # Make native libelf and install it
 echo `date` " Making all in $WORKING_DIR/win32-build/libelf and installing..." >> $LOGFILE
-make all -j5
+make all -j4
 assert_success $? "ERROR: making/installing libelf build"
 make install
 assert_success $? "ERROR: making/installing libelf build"
@@ -998,7 +1027,7 @@ CC=$MINGW32_HOST_PREFIX-gcc AR="$MINGW32_HOST_PREFIX-ar" RANLIB=$MINGW32_HOST_PR
 
 # Make win32 zlib and install it
 echo `date` " Making all in $WORKING_DIR/win32-build/zlib and installing..." >> $LOGFILE
-make all -j5
+make all -j4
 assert_success $? "ERROR: making/installing zlib build - all"
 make install
 assert_success $? "ERROR: making/installing zlib build - install"
@@ -1016,15 +1045,13 @@ cd gcc
 # Configure win32 cross compiler
 echo `date` " Configuring win32 cross compiler build in $WORKING_DIR/win32-build..." >> $LOGFILE
 
-AR_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32mx/bin/ar" AS_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32mx/bin/as" LD_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32mx/bin/ld" GCC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/bin/pic32-gcc" CC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/bin/pic32-gcc" CXX_FOR_TARGET='pic32-gcc' target_alias=pic32- ../../chipKIT-cxx/src45x/gcc/configure $BUILDMACHINE --host=$MINGW32_HOST_PREFIX --target=pic32mx --program-prefix=pic32- --disable-threads --disable-libmudflap --disable-libssp --disable-libstdcxx-pch --enable-sgxx-sde-multilibs --disable-threads --with-gnu-as --with-gnu-ld --disable-sim --disable-bootstrap --enable-obsolete --disable-__cxa_atexit --disable-libfortran --enable-languages=c,c++ --disable-shared --with-newlib --disable-nls --prefix=$WORKING_DIR/win32-image/pic32-tools --disable-libgomp --without-headers --disable-libffi --enable-poison-system-directories --libexecdir=$WORKING_DIR/win32-image/pic32-tools/pic32mx/bin --with-dwarf2  --with-libelf=$WORKING_DIR/win32-build/host-libs --with-gmp=$WORKING_DIR/win32-build/host-libs --with-bugurl=http://www.chipkit.org/forums XGCC_FLAGS_FOR_TARGET="-fno-rtti -fno-enforce-eh-specs" --enable-cxx-flags="-fno-exceptions -ffunction-sections"
-#"--with-host-libstdcxx=-static-libgcc -Wl,-Bstatic,-lstdc++,-Bdynamic -lm"
-# --with-ppl=$WORKING_DIR/win32-build/host-libs
-# --with-cloog=$WORKING_DIR/win32-build/host-libs
+AR_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32mx/bin/ar" AS_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32mx/bin/as" LD_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32mx/bin/ld" GCC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/bin/pic32-gcc" CC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/bin/pic32-gcc" CXX_FOR_TARGET='pic32-gcc' target_alias=pic32- ../../chipKIT-cxx/src45x/gcc/configure $GCC_CONFIGURE_FLAGS $BUILDMACHINE --host=$MINGW32_HOST_PREFIX --prefix=$WORKING_DIR/win32-image/pic32-tools --libexecdir=$WORKING_DIR/win32-image/pic32-tools/pic32mx/bin --with-libelf=$WORKING_DIR/win32-build/host-libs --with-gmp=$WORKING_DIR/win32-build/host-libs CFLAGS_FOR_TARGET="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections" XGCC_FLAGS_FOR_TARGET="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections" --enable-cxx-flags="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections"
+
 assert_success $? "ERROR: configuring win3232 cross build"
 
 # Make cross compiler and install it
 echo `date` " Making all in $WORKING_DIR/win32-build/gcc and installing..." >> $LOGFILE
-make CFLAGS="-O2 -DCHIPKIT_PIC32 -D_WIN32_WINNT=0x0501 -DWINVER=0x501" all-gcc \
+make CFLAGS="-Os -DCHIPKIT_PIC32 -D_WIN32_WINNT=0x0501 -DWINVER=0x501" all-gcc \
 NM_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-nm" \
 RANLIB_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ranlib" \
 STRIP_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-strip" \
@@ -1032,9 +1059,9 @@ AR_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ar" \
 AS_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as" \
 LD_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld" \
 GCC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc" \
-CC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc" -j5
+CC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc" -j4 CXXFLAGS="$CFLAGS_FOR_TARGET"
 assert_success $? "ERROR: making/installing win32 Canadian-cross compiler build"
-make CFLAGS="-O2 -DCHIPKIT_PIC32 -D_WIN32_WINNT=0x0501 -DWINVER=0x501" install-gcc
+make CFLAGS="-Os -DCHIPKIT_PIC32 -D_WIN32_WINNT=0x0501 -DWINVER=0x501" install-gcc
 assert_success $? "ERROR: making/installing win32 Canadian-cross compiler build"
 
 cd ..
@@ -1054,12 +1081,11 @@ echo `date` " Configure newlib for win32-image..." >> $LOGFILE
 
 #build newlib here
 
-GCC_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc CC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc -I$WORKING_DIR/chipKIT-cxx/src45x/gcc/ginclude" CXX_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ CPP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ AR_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ar RANLIB_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ranlib READELF_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-readelf STRIP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-strip AS_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as LD_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld ../../pic32-newlib/configure --target=pic32mx --disable-threads --enable-static --disable-libmudflap --disable-libssp --disable-libstdcxx-pch  --with-arch=pic32mx --enable-sgxx-sde-multilib --with-gnu-as --with-gnu-ld --enable-languages=c,c++ --disable-shared --disable-nls --with-dwarf2 --disable-bootstrap --enable-obsolete --disable-sjlj-exceptions --disable-__cxa_atexit --disable-libfortran --prefix=$WORKING_DIR/win32-image/pic32-tools --libexecdir=$WORKING_DIR/win32-image/pic32-tools/pic32mx/bin --with-bugurl=http://chipkit.org/forum --disable-libgomp --disable-libffi --program-prefix=pic32- --with-newlib --enable-newlib-io-long-long --enable-newlib-register-fini --disable-newlib-multithread --disable-libgloss --disable-newlib-supplied-syscall XGCC_FLAGS_FOR_TARGET="-fno-rtti -fno-enforce-eh-specs" --enable-cxx-flags="-fno-exceptions -ffunction-sections"
+GCC_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc CC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc -I$WORKING_DIR/chipKIT-cxx/src45x/gcc/ginclude" CXX_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ CPP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ AR_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ar RANLIB_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ranlib READELF_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-readelf STRIP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-strip AS_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as LD_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld ../../pic32-newlib/configure $NEWLIB_CONFIGURE_FLAGS --prefix=$WORKING_DIR/win32-image/pic32-tools --libexecdir=$WORKING_DIR/win32-image/pic32-tools/pic32mx/bin CFLAGS_FOR_TARGET="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections -DSMALL_MEMORY -D_NO_GETLOGIN -D_NO_GETPWENT -D_NO_GETUT -D_NO_GETPASS -D_NO_SIGSET" CCASFLAGS_FOR_TARGET="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections -DSMALL_MEMORY -D_NO_GETLOGIN -D_NO_GETPWENT -D_NO_GETUT -D_NO_GETPASS -D_NO_SIGSET" XGCC_FLAGS_FOR_TARGET="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections" --enable-cxx-flags="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections"
 
 echo `date` " Make newlib for win32-image..." >> $LOGFILE
 
-make all -j5
-make all
+make all -j4 CFLAGS_FOR_TARGET="-DCHIPKIT_PIC32 -D_WIN32_WINNT=0x0501 -DWINVER=0x501 -fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections -DSMALL_MEMORY -D_NO_GETLOGIN -D_NO_GETPWENT -D_NO_GETUT -D_NO_GETPASS -D_NO_SIGSET" CCASFLAGS_FOR_TARGET="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections -DSMALL_MEMORY -D_NO_GETLOGIN -D_NO_GETPWENT -D_NO_GETUT -D_NO_GETPASS -D_NO_SIGSET" XGCC_FLAGS_FOR_TARGET="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections"
 assert_success $? "ERROR: Make newlib for cross build"
 make install
 assert_success $? "ERROR: Install newlib for cross build"
@@ -1077,14 +1103,13 @@ assert_success $? "ERROR: creating directory $WORKING_DIR/win32-build/gcc"
 cd gcc
 
 echo `date` " Configure gcc after making Newlib for win32-image..." >> $LOGFILE
-GCC_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc CC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc -I$WORKING_DIR/chipKIT-cxx/src45x/gcc/ginclude" CXX_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ CPP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ AR_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ar RANLIB_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ranlib READELF_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-readelf STRIP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-strip AS_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as LD_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld ../../chipKIT-cxx/src45x/gcc/configure target_alias=pic32- $BUILDMACHINE --host=$MINGW32_HOST_PREFIX --target=pic32mx --program-prefix=pic32- --disable-threads --disable-libmudflap --disable-libssp --disable-libstdcxx-pch --enable-sgxx-sde-multilibs --disable-threads --with-gnu-as --with-gnu-ld --disable-sim --disable-bootstrap  --disable-sjlj-exceptions --enable-obsolete --disable-__cxa_atexit --disable-libfortran --enable-languages=c,c++ --disable-shared --with-newlib --disable-nls --prefix=$WORKING_DIR/win32-image/pic32-tools --disable-libgomp --disable-libffi --enable-poison-system-directories --libexecdir=$WORKING_DIR/win32-image/pic32-tools/pic32mx/bin --with-dwarf2 --with-libelf=$WORKING_DIR/win32-build/host-libs --with-gmp=$WORKING_DIR/win32-build/host-libs --with-bugurl=http://www.chipkit.org/forums XGCC_FLAGS_FOR_TARGET="-fno-rtti -fno-enforce-eh-specs" --enable-cxx-flags="-fno-exceptions -ffunction-sections" --with-ppl=$WORKING_DIR/win32-build/host-libs --with-cloog=$WORKING_DIR/win32-build/host-libs
+GCC_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc CC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc -I$WORKING_DIR/chipKIT-cxx/src45x/gcc/ginclude" CXX_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ CPP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ AR_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ar RANLIB_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ranlib READELF_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-readelf STRIP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-strip AS_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as LD_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld ../../chipKIT-cxx/src45x/gcc/configure $GCC_CONFIGURE_FLAGS $BUILDMACHINE --host=$MINGW32_HOST_PREFIX --prefix=$WORKING_DIR/win32-image/pic32-tools --libexecdir=$WORKING_DIR/win32-image/pic32-tools/pic32mx/bin  --with-libelf=$WORKING_DIR/win32-build/host-libs --with-gmp=$WORKING_DIR/win32-build/host-libs CFLAGS_FOR_TARGET="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections" XGCC_FLAGS_FOR_TARGET="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections" --enable-cxx-flags="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections" --with-ppl=$WORKING_DIR/win32-build/host-libs --with-cloog=$WORKING_DIR/win32-build/host-libs
 #"--with-host-libstdcxx=-static-libgcc -Wl,-Bstatic,-lstdc++,-Bdynamic -lm"
 assert_success $? "ERROR: configuring win3232 cross build 2"
 
+
 make CFLAGS="-O2 -DCHIPKIT_PIC32 -D_WIN32_WINNT=0x0501 -DWINVER=0x501" all \
-GCC_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc CC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc -I$WORKING_DIR/chipKIT-cxx/src45x/gcc/ginclude" CXX_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ CPP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ AR_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ar RANLIB_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ranlib READELF_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-readelf STRIP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-strip AS_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as LD_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld  -j5
-make CFLAGS="-O2 -DCHIPKIT_PIC32 -D_WIN32_WINNT=0x0501 -DWINVER=0x501" all \
-GCC_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc CC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc -I$WORKING_DIR/chipKIT-cxx/src45x/gcc/ginclude" CXX_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ CPP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ AR_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ar RANLIB_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ranlib READELF_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-readelf STRIP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-strip AS_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as LD_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld
+GCC_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc CC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc -I$WORKING_DIR/chipKIT-cxx/src45x/gcc/ginclude" CXX_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ CPP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ AR_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ar RANLIB_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ranlib READELF_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-readelf STRIP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-strip AS_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as LD_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld -j4
 assert_success $? "ERROR: making win32 Canadian-cross compiler build"
 make CFLAGS="-O2 -DCHIPKIT_PIC32 -D_WIN32_WINNT=0x0501 -DWINVER=0x501" install
 assert_success $? "ERROR: installing win32 Canadian-cross compiler build"
@@ -1097,11 +1122,250 @@ unset CPP
 unset CXX
 
 cd $WORKING_DIR/win32-image/pic32-tools
-#find . -type f -name "*.exe" | xargs $MINGW_HOST_PREFIX-strip
+find . -type f -name "*.exe" | xargs $MINGW_HOST_PREFIX-strip
 
 status_update "Make minGW32 Canadian cross build complete"
 
 cd $WORKING_DIR
+
+
+####### End win32 build ###############
+
+
+####### Begin arm-linux build ############
+
+################ Begin build arm-linux compiler ##############
+# Build ARMLINUX32 cross compiler
+echo `date` " Creating cross build in $WORKING_DIR/arm-linux-build..." >> $LOGFILE
+if [ -e arm-linux-build ]
+then
+    rm -rf arm-linux-build
+fi
+mkdir arm-linux-build
+assert_success $? "ERROR: creating directory $WORKING_DIR/arm-linux-build"
+
+cd arm-linux-build
+
+if [ -e binutils ]
+then
+    rm -rf binutils
+fi
+mkdir binutils
+assert_success $? "ERROR: creating directory $WORKING_DIR/arm-linux-build/binutils"
+
+cd binutils
+
+# Configure ARMLINUX32-cross binutils
+echo `date` " Configuring arm-linux binutils build in $WORKING_DIR/arm-linux-build..." >> $LOGFILE
+../../chipKIT-cxx/src45x/binutils/configure  --target=pic32mx --prefix=$WORKING_DIR/arm-linux-image/pic32-tools --libexecdir=$WORKING_DIR/arm-linux-image/pic32mx/bin --host=$ARMLINUX32_HOST_PREFIX --disable-nls --disable-tui --disable-gdbtk --disable-shared --enable-static --disable-threads --disable-bootstrap  --with-dwarf2 --enable-multilib --without-newlib --disable-sim --with-lib-path=: --enable-poison-system-directories --program-prefix=pic32- --with-bugurl=http://www.chipkit.org/forums
+assert_success $? "ERROR: configuring arm-linux binutils build"
+
+# Make ARMLINUX32-cross binutils and install it
+echo `date` " Making all in $WORKING_DIR/arm-linux-build/binutils and installing..." >> $LOGFILE
+make CFLAGS="-Os -DCHIPKIT_PIC32" all -j4
+assert_success $? "ERROR: making/installing arm-linux Canadian-cross binutils build"
+make CFLAGS="-Os -DCHIPKIT_PIC32" install
+assert_success $? "ERROR: making/installing arm-linux Canadian-cross binutils build"
+cd ..
+
+if [ -e gmp ]
+then
+    rm -rf gmp
+fi
+mkdir gmp
+assert_success $? "ERROR: creating directory $WORKING_DIR/arm-linux-build/gmp"
+
+cd gmp
+
+echo `date` " Configuring arm-linux gmp build in $WORKING_DIR/arm-linux-build/gmp..." >> $LOGFILE
+CPPFLAGS="-fexceptions" ../../chipKIT-cxx/src45x/gmp/configure --enable-cxx --prefix=$WORKING_DIR/arm-linux-build/host-libs --disable-shared --host=$ARMLINUX32_HOST_PREFIX --disable-nls --with-gnu-ld --disable-debug --disable-rpath --enable-fft "--with-host-libstdcxx=-static-libgcc -Wl,-Bstatic,-lstdc++,-Bdynamic -lm"
+
+# Make arm-linux gmp and install it
+echo `date` " Making all in $WORKING_DIR/arm-linux-build/gmp and installing..." >> $LOGFILE
+make CPPFLAGS="-fexceptions" all -j4
+assert_success $? "ERROR: making/installing gmp build"
+make install
+assert_success $? "ERROR: making/installing gmp build"
+
+cd ..
+
+if [ "x$SKIPGRAPHITE" == "x" ]; then
+
+    if [ -e ppl ]
+    then
+        rm -rf ppl
+    fi
+    mkdir ppl
+    assert_success $? "ERROR: creating directory $WORKING_DIR/arm-linux-build/ppl"
+
+    cd ppl
+    echo `date` " Configuring native ppl build in $WORKING_DIR/arm-linux-build/ppl..." >> $LOGFILE
+    ../../chipKIT-cxx/src45x/ppl/configure --prefix=$WORKING_DIR/arm-linux-build/host-libs --disable-shared --enable-static --with-gnu-ld --host=$ARMLINUX32_HOST_PREFIX --target=pic32mx --disable-nls --enable-optimization=speed --disable-rpath --with-gmp-=$WORKING_DIR/arm-linux-build/host-libs --with-libgmp-prefix=$WORKING_DIR/arm-linux-build/host-libs
+
+    # Make native ppl and install it
+    echo `date` " Making all in $WORKING_DIR/arm-linux-build/ppl and installing..." >> $LOGFILE
+    make all -j4
+    assert_success $? "ERROR: making/installing ppl build"
+    make install
+    assert_success $? "ERROR: making/installing ppl build"
+
+    cd ..
+
+    if [ -e cloog ]
+    then
+        rm -rf cloog
+    fi
+    mkdir cloog
+    assert_success $? "ERROR: creating directory $WORKING_DIR/arm-linux-build/cloog"
+
+    cd cloog
+
+    echo `date` " Configuring arm-linux cloog build in $WORKING_DIR/arm-linux-build/cloog..." >> $LOGFILE
+    ../../chipKIT-cxx/src45x/cloog/configure $BUILDMACHINE --with-gnu-ld --prefix=$WORKING_DIR/arm-linux-build/host-libs --host=$ARMLINUX32_HOST_PREFIX --target=pic32mx --with-gmp=$WORKING_DIR/arm-linux-build/host-libs --with-ppl=$WORKING_DIR/arm-linux-build/host-libs --target=pic32mx --disable-shared --enable-static --disable-shared
+
+    # Make native cloog and install it
+    echo `date` " Making all in $WORKING_DIR/arm-linux-build/cloog and installing..." >> $LOGFILE
+    make all -j4
+    assert_success $? "ERROR: making/installing cloog build"
+    make install
+    assert_success $? "ERROR: making/installing cloog build"
+
+    cd ..
+fi
+
+if [ -e libelf ]
+then
+    rm -rf libelf
+fi
+mkdir libelf
+assert_success $? "ERROR: creating directory $WORKING_DIR/arm-linux-build/libelf"
+
+cd libelf
+echo `date` " Configuring native libelf build in $WORKING_DIR/arm-linux-build/libelf..." >> $LOGFILE
+GCC_FOR_TARGET='pic32-gcc' CC_FOR_TARGET='pic32-gcc' CPP_FOR_TARGET='pic32-g++' AS_FOR_TARGET=pic32-as LD_FOR_TARGET=pic32-ld CFLAGS_FOR_BUILD="-Os" ../../chipKIT-cxx/src45x/libelf/configure  --prefix=$WORKING_DIR/arm-linux-build/host-libs --host=$ARMLINUX32_HOST_PREFIX $BUILDMACHINE --target=pic32mx --disable-shared --disable-debug --disable-nls
+
+# Make native libelf and install it
+echo `date` " Making all in $WORKING_DIR/arm-linux-build/libelf and installing..." >> $LOGFILE
+make all -j4
+assert_success $? "ERROR: making/installing libelf build"
+make install
+assert_success $? "ERROR: making/installing libelf build"
+cd ..
+
+if [ -e zlib ]
+then
+    rm -rf zlib
+fi
+cp -r ../chipKIT-cxx/src45x/zlib .
+assert_success $? "ERROR: copy src45x/zlib directory to $WORKING_DIR/arm-linux-build/zlib"
+
+cd zlib
+echo `date` " Configuring arm-linux zlib build in $WORKING_DIR/arm-linux-build/zlib..." >> $LOGFILE
+CC=$ARMLINUX32_HOST_PREFIX-gcc AR="$ARMLINUX32_HOST_PREFIX-ar" RANLIB=$ARMLINUX32_HOST_PREFIX-ranlib ./configure --prefix=$WORKING_DIR/arm-linux-build/host-libs
+
+# Make arm-linux zlib and install it
+echo `date` " Making all in $WORKING_DIR/arm-linux-build/zlib and installing..." >> $LOGFILE
+make all -j4
+assert_success $? "ERROR: making/installing zlib build - all"
+make install
+assert_success $? "ERROR: making/installing zlib build - install"
+cd ..
+
+if [ -e gcc ]
+then
+    rm -rf gcc
+fi
+mkdir gcc
+assert_success $? "ERROR: creating directory $WORKING_DIR/arm-linux-build/gcc"
+
+cd gcc
+
+# Configure arm-linux cross compiler
+echo `date` " Configuring arm-linux cross compiler build in $WORKING_DIR/arm-linux-build..." >> $LOGFILE
+
+AR_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32mx/bin/ar" AS_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32mx/bin/as" LD_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32mx/bin/ld" GCC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/bin/pic32-gcc" CC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/bin/pic32-gcc" CXX_FOR_TARGET='pic32-gcc' target_alias=pic32- ../../chipKIT-cxx/src45x/gcc/configure $GCC_CONFIGURE_FLAGS $BUILDMACHINE --host=$ARMLINUX32_HOST_PREFIX --prefix=$WORKING_DIR/arm-linux-image/pic32-tools --libexecdir=$WORKING_DIR/arm-linux-image/pic32-tools/pic32mx/bin --with-libelf=$WORKING_DIR/arm-linux-build/host-libs --with-gmp=$WORKING_DIR/arm-linux-build/host-libs CFLAGS_FOR_TARGET="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections" XGCC_FLAGS_FOR_TARGET="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections" --enable-cxx-flags="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections"
+
+assert_success $? "ERROR: configuring arm-linux32 cross build"
+
+# Make cross compiler and install it
+echo `date` " Making all in $WORKING_DIR/arm-linux-build/gcc and installing..." >> $LOGFILE
+make CFLAGS="-Os -DCHIPKIT_PIC32" all-gcc \
+NM_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-nm" \
+RANLIB_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ranlib" \
+STRIP_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-strip" \
+AR_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ar" \
+AS_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as" \
+LD_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld" \
+GCC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc" \
+CC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc" -j4 CXXFLAGS="$CFLAGS_FOR_TARGET"
+assert_success $? "ERROR: making/installing arm-linux Canadian-cross compiler build"
+make CFLAGS="-Os -DCHIPKIT_PIC32" install-gcc
+assert_success $? "ERROR: making/installing arm-linux Canadian-cross compiler build"
+
+cd ..
+
+if [ "xSKIPMULTIPLENEWLIB" != x ]; then
+
+if [ -e newlib ]
+then
+    rm -rf newlib
+fi
+mkdir newlib
+assert_success $? "ERROR: creating directory $WORKING_DIR/arm-linuxIMAGE/newlib"
+
+cd newlib
+
+echo `date` " Configure newlib for arm-linux-image..." >> $LOGFILE
+
+#build newlib here
+
+GCC_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc CC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc -I$WORKING_DIR/chipKIT-cxx/src45x/gcc/ginclude" CXX_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ CPP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ AR_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ar RANLIB_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ranlib READELF_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-readelf STRIP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-strip AS_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as LD_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld ../../pic32-newlib/configure $NEWLIB_CONFIGURE_FLAGS --prefix=$WORKING_DIR/arm-linux-image/pic32-tools --libexecdir=$WORKING_DIR/arm-linux-image/pic32-tools/pic32mx/bin CFLAGS_FOR_TARGET="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections -DSMALL_MEMORY -D_NO_GETLOGIN -D_NO_GETPWENT -D_NO_GETUT -D_NO_GETPASS -D_NO_SIGSET" CCASFLAGS_FOR_TARGET="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections -DSMALL_MEMORY -D_NO_GETLOGIN -D_NO_GETPWENT -D_NO_GETUT -D_NO_GETPASS -D_NO_SIGSET" XGCC_FLAGS_FOR_TARGET="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections" --enable-cxx-flags="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections"
+
+echo `date` " Make newlib for arm-linux-image..." >> $LOGFILE
+
+make all -j4 CFLAGS_FOR_TARGET="-DCHIPKIT_PIC32 -fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections -DSMALL_MEMORY -D_NO_GETLOGIN -D_NO_GETPWENT -D_NO_GETUT -D_NO_GETPASS -D_NO_SIGSET" CCASFLAGS_FOR_TARGET="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections -DSMALL_MEMORY -D_NO_GETLOGIN -D_NO_GETPWENT -D_NO_GETUT -D_NO_GETPASS -D_NO_SIGSET" XGCC_FLAGS_FOR_TARGET="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections"
+assert_success $? "ERROR: Make newlib for cross build"
+make install
+assert_success $? "ERROR: Install newlib for cross build"
+
+cd ..
+fi
+
+if [ -e gcc ]
+then
+    rm -rf gcc
+fi
+mkdir gcc
+assert_success $? "ERROR: creating directory $WORKING_DIR/arm-linux-build/gcc"
+
+cd gcc
+
+echo `date` " Configure gcc after making Newlib for arm-linux-image..." >> $LOGFILE
+GCC_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc CC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc -I$WORKING_DIR/chipKIT-cxx/src45x/gcc/ginclude" CXX_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ CPP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ AR_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ar RANLIB_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ranlib READELF_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-readelf STRIP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-strip AS_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as LD_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld ../../chipKIT-cxx/src45x/gcc/configure $GCC_CONFIGURE_FLAGS $BUILDMACHINE --host=$ARMLINUX32_HOST_PREFIX --prefix=$WORKING_DIR/arm-linux-image/pic32-tools --libexecdir=$WORKING_DIR/arm-linux-image/pic32-tools/pic32mx/bin  --with-libelf=$WORKING_DIR/arm-linux-build/host-libs --with-gmp=$WORKING_DIR/arm-linux-build/host-libs CFLAGS_FOR_TARGET="-fno-rtti -fno-exceptions -fomit-frame-pointer  PREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections" XGCC_FLAGS_FOR_TARGET="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections" --enable-cxx-flags="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections" --with-ppl=$WORKING_DIR/arm-linux-build/host-libs --with-cloog=$WORKING_DIR/arm-linux-build/host-libs
+#"--with-host-libstdcxx=-static-libgcc -Wl,-Bstatic,-lstdc++,-Bdynamic -lm"
+assert_success $? "ERROR: configuring arm-linux32 cross build 2"
+
+make CFLAGS="-Os -DCHIPKIT_PIC32" all \
+GCC_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc CC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc -I$WORKING_DIR/chipKIT-cxx/src45x/gcc/ginclude" CXX_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ CPP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ AR_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ar RANLIB_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ranlib READELF_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-readelf STRIP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-strip AS_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as LD_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld  -j4 CXXFLAGS="$CFLAGS_FOR_TARGET"
+
+make CFLAGS="-Os -DCHIPKIT_PIC32" install
+assert_success $? "ERROR: installing arm-linux Canadian-cross compiler build"
+
+cd ../..
+status_update "Make arm-linux Canadian cross build complete"
+
+unset CC
+unset CPP
+unset CXX
+
+cd $WORKING_DIR/arm-linux-image/pic32-tools
+find . -type f -name "*.exe" | xargs $ARMLINUX32_HOST_PREFIX-strip
+
+status_update "Make ARMLINUX32 Canadian cross build complete"
+
+cd $WORKING_DIR
+
+############   End Arm-Linux build #############
 
 ###
 # In the resultant install directory, there are a few extra directories
@@ -1115,6 +1379,12 @@ rm -rf $WORKING_DIR/win32-image/pic32-tools/man
 rm -rf $WORKING_DIR/win32-image/pic32-tools/info
 rm -rf $WORKING_DIR/win32-image/pic32-tools/share
 rm -rf $WORKING_DIR/win32-image/pic32-tools/libsrc
+
+rmdir  $WORKING_DIR/arm-linux-image/pic32-tools/include
+rm -rf $WORKING_DIR/arm-linux-image/pic32-tools/man
+rm -rf $WORKING_DIR/arm-linux-image/pic32-tools/info
+rm -rf $WORKING_DIR/arm-linux-image/pic32-tools/share
+rm -rf $WORKING_DIR/arm-linux-image/pic32-tools/libsrc
 
 rmdir  $WORKING_DIR/$NATIVEIMAGE/pic32-tools/include
 rm -rf $WORKING_DIR/$NATIVEIMAGE/pic32-tools/man
@@ -1162,6 +1432,11 @@ then
       rsync -qavzC --include "*/" --include "*" plib-image/ win32-image/pic32-tools/
       assert_success $? "ERROR: Install plib in win32-image"
     fi
+    if [ -e arm-linux-image ]
+    then
+      rsync -qavzC --include "*/" --include "*" plib-image/ arm-linux-image/pic32-tools/
+      assert_success $? "ERROR: Install plib in arm-linux-image"
+    fi
 fi
 
 cd $WORKING_DIR
@@ -1192,6 +1467,8 @@ cd ../$NATIVEIMAGE
 zip -9 -r $WORKING_DIR/zips/pic32-tools-$REV-$NATIVEIMAGE.zip pic32-tools
 cd ../export-image
 zip -9 -r $WORKING_DIR/zips/pic32-tools-$REV-export-image.zip pic32-tools
+cd ../arm-linux-image
+zip -9 -r $WORKING_DIR/zips/pic32-tools-$REV-arm-linux-image.zip pic32-tools
 cd ..
 if [ "x$LINUX32IMAGE" != "x" ]; then
     cd $LINUX32IMAGE
