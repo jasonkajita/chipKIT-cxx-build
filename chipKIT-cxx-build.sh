@@ -449,6 +449,36 @@ if [ "x$LINUX32IMAGE" != "x" ] ; then
         assert_success $? "ERROR: Copying deviceSupport.xml file to $LINUX32IMAGE"
 fi
 
+if [[ ! -e $WORKING_DIR/arm-linux-image/bin ]] ; then
+  mkdir $WORKING_DIR/arm-linux-image/bin
+fi
+
+mkdir -p $WORKING_DIR/arm-linux-image/bin/device_files
+cp *.info $WORKING_DIR/arm-linux-image/bin/device_files/.
+
+mkdir -p $WORKING_DIR/arm-linux-image/pic32mx/device_files/.
+cp *.info $WORKING_DIR/arm-linux-image/pic32mx/device_files/.
+
+mkdir -p $WORKING_DIR/arm-linux-image/pic32mx/bin/device_files/.
+cp *.info $WORKING_DIR/arm-linux-image/pic32mx/bin/device_files/.
+
+mkdir -p $WORKING_DIR/arm-linux-image/device_files/.
+cp *.info $WORKING_DIR/arm-linux-image/device_files/.
+
+cp $WORKING_DIR/$NATIVEIMAGE/bin/device_files/xc32_device.info $WORKING_DIR/arm-linux-image/pic32mx/.
+cp $WORKING_DIR/$NATIVEIMAGE/bin/device_files/xc32_device.info $WORKING_DIR/arm-linux-image/.
+assert_success $? "ERROR: Copying xc32_device info file"
+
+assert_success $? "ERROR: Copying device info files"
+cp $WORKING_DIR/arm-linux-image/bin/device_files/xc32_device.info $WORKING_DIR/arm-linux-image/bin/.
+assert_success $? "ERROR: Copying xc32_device info file"
+
+cp .LanguageToolSuite $WORKING_DIR/arm-linux-image/bin/
+assert_success $? "ERROR: Copying .LanguageToolSuite file"
+
+cp deviceSupport.xml $WORKING_DIR/arm-linux-image/bin/
+assert_success $? "ERROR: Copying deviceSupport.xml file for arm-linux-image"
+
 cd $WORKING_DIR
 
 #######################################################################################################
