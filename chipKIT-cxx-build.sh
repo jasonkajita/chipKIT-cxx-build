@@ -1,5 +1,8 @@
 #!/bin/bash
 
+MCHP_RESOURCE=
+MCHP_VERSION=
+
 SOURCE_GITHUB_ACCOUNT=jasonkajita
 PLIB_IMAGE_TAR=plib-image-20120428.tar.bz2
 
@@ -24,18 +27,19 @@ echo "$BASH_SOURCE START BUILD..."
 # Figure out which MinGW compiler we have. Candidates are:
 # i586-mingw32msvc-gcc   (Ubuntu)
 # i386-mingw32-gcc       (Fedora)
-if [ "x$MINGW32_HOST_PREFIX" == "x" ]; then
-    MINGW32_GCC=`which i586-mingw32msvc-gcc`
-    if [ "x$MINGW_GCC" == "x" ] ; then
-        MINGW32_HOST_PREFIX=i386-mingw32
-    else
-        MINGW32_HOST_PREFIX=i586-mingw32msvc
-    fi
-    unset MINGW32_GCC
+if [ "x$MINGW_HOST_PREFIX" == "x" ]; then
+ MINGW_GCC=`which i386-mingw32-gcc`
+ if [ "x$MINGW_GCC" != "x" ] ; then
+  MINGW_HOST_PREFIX=i386-mingw32
+ else
+  MINGW_HOST_PREFIX=i586-mingw32msvc
+ fi
+ unset MINGW_GCC
 fi
 
 unset ARMLINUX32_HOST_PREFIX
-ARMLINUX32_HOST_PREFIX=arm-unknown-linux-gnueabi
+#ARMLINUX32_HOST_PREFIX=arm-unknown-linux-gnueabi
+ARMLINUX32_HOST_PREFIX=arm-linux-gnueabi
 
 # Does notify-send exist?
 if [ "x$NOTIFY_SEND" == "x" ] ; then
@@ -66,7 +70,7 @@ TVAL=master
 BUILD=chipKIT-cxx
 TAG=master
 FULL_ONLY=no
-CHECKOUT="yes"
+CHECKOUT="no"
 SKIPLIBS=""
 SKIPNATIVE=""
 SKIPLINUX32=""
@@ -324,6 +328,132 @@ fi
 
 cd ..
 
+
+######### Building Info files ################
+
+status_update "Building device info files"
+cd $WORKING_DIR/chipKIT-cxx/src45x/c30_resource/src
+rm $WORKING_DIR/chipKIT-cxx/src45x/c30_resource/src/xc32/*.info
+./xc32-build.sh
+
+status_update "Installing info files and .LanguageToolSuite file"
+
+cd $WORKING_DIR/chipKIT-cxx/src45x/c30_resource/src/xc32
+
+if [[ ! -e $WORKING_DIR/$NATIVEIMAGE/bin ]] ; then
+ mkdir $WORKING_DIR/$NATIVEIMAGE/bin
+fi
+
+	# TODO: Copying to multiple places for now. Eventually consolidate to /bin/device_files
+	mkdir -p $WORKING_DIR/$NATIVEIMAGE/bin/device_files
+	cp *.info $WORKING_DIR/$NATIVEIMAGE/bin/device_files/.
+
+	mkdir -p $WORKING_DIR/$NATIVEIMAGE/pic32mx/device_files/.
+	cp *.info $WORKING_DIR/$NATIVEIMAGE/pic32mx/device_files/.
+
+	mkdir -p $WORKING_DIR/$NATIVEIMAGE/pic32mx/bin/device_files/.
+	cp *.info $WORKING_DIR/$NATIVEIMAGE/pic32mx/bin/device_files/.
+
+	mkdir -p $WORKING_DIR/$NATIVEIMAGE/device_files/.
+	cp *.info $WORKING_DIR/$NATIVEIMAGE/device_files/.
+
+	cp $WORKING_DIR/$NATIVEIMAGE/bin/device_files/xc32_device.info $WORKING_DIR/$NATIVEIMAGE/pic32mx/.
+	assert_success $? "ERROR: Copying xc32_device info file"
+
+	cp $WORKING_DIR/$NATIVEIMAGE/bin/device_files/xc32_device.info $WORKING_DIR/$NATIVEIMAGE/bin/.
+	assert_success $? "ERROR: Copying xc32_device info file"
+
+cp .LanguageToolSuite $WORKING_DIR/$NATIVEIMAGE/bin/
+assert_success $? "ERROR: Copying .LanguageToolSuite file"
+
+cp deviceSupport.xml $WORKING_DIR/$NATIVEIMAGE/bin/
+assert_success $? "ERROR: Copying deviceSupport.xml file"
+
+if [ "$WINDOWS" == "yes" ] ; then
+
+        if [[ ! -e $WORKING_DIR/win32-image/bin ]] ; then
+          mkdir $WORKING_DIR/win32-image/bin
+        fi
+
+		mkdir -p $WORKING_DIR/win32-image/bin/device_files
+		cp *.info $WORKING_DIR/win32-image/bin/device_files/.
+
+		mkdir -p $WORKING_DIR/win32-image/pic32mx/device_files/.
+		cp *.info $WORKING_DIR/win32-image/pic32mx/device_files/.
+
+		mkdir -p $WORKING_DIR/win32-image/pic32mx/bin/device_files/.
+		cp *.info $WORKING_DIR/win32-image/pic32mx/bin/device_files/.
+
+		mkdir -p $WORKING_DIR/win32-image/device_files/.
+		cp *.info $WORKING_DIR/win32-image/device_files/.
+
+		cp $WORKING_DIR/$NATIVEIMAGE/bin/device_files/xc32_device.info $WORKING_DIR/win32-image/pic32mx/.
+		cp $WORKING_DIR/$NATIVEIMAGE/bin/device_files/xc32_device.info $WORKING_DIR/win32-image/.
+		assert_success $? "ERROR: Copying xc32_device info file"
+
+		assert_success $? "ERROR: Copying device info files"
+		cp $WORKING_DIR/win32-image/bin/device_files/xc32_device.info $WORKING_DIR/win32-image/bin/.
+		assert_success $? "ERROR: Copying xc32_device info file"
+
+	cp .LanguageToolSuite $WORKING_DIR/win32-image/bin/
+	assert_success $? "ERROR: Copying .LanguageToolSuite file"
+	cp deviceSupport.xml $WORKING_DIR/win32-image/bin/
+	assert_success $? "ERROR: Copying deviceSupport.xml file for win32-image"
+
+fi
+
+if [[ ! -e $WORKING_DIR/export-image/bin ]] ; then
+ mkdir $WORKING_DIR/export-image/bin
+fi
+
+	mkdir $WORKING_DIR/export-image/bin/device_files
+	cp *.info $WORKING_DIR/export-image/bin/device_files/.
+	assert_success $? "ERROR: Copying device info files"
+	cp $WORKING_DIR/export-image/bin/device_files/xc32_device.info $WORKING_DIR/export-image/bin/.
+	assert_success $? "ERROR: Copying xc32_device info file"
+	cp .LanguageToolSuite $WORKING_DIR/export-image/bin/
+	assert_success $? "ERROR: Copying .LanguageToolSuite file"
+	cp deviceSupport.xml $WORKING_DIR/export-image/bin/
+	assert_success $? "ERROR: Copying deviceSupport.xml file to export-image"
+
+if [ "x$LINUX32IMAGE" != "x" ] ; then
+
+        if [[ ! -e $WORKING_DIR/$LINUX32IMAGE/bin ]] ; then
+          mkdir $WORKING_DIR/$LINUX32IMAGE/bin
+        fi
+
+		mkdir -p $WORKING_DIR/$LINUX32IMAGE/bin/device_files
+		cp *.info $WORKING_DIR/$LINUX32IMAGE/bin/device_files/.
+
+		mkdir -p $WORKING_DIR/$LINUX32IMAGE/pic32mx/device_files/.
+		cp *.info $WORKING_DIR/$LINUX32IMAGE/pic32mx/device_files/.
+	
+		mkdir -p $WORKING_DIR/$LINUX32IMAGE/pic32mx/bin/device_files/.
+		cp *.info $WORKING_DIR/$LINUX32IMAGE/pic32mx/bin/device_files/.
+
+		mkdir -p $WORKING_DIR/$LINUX32IMAGE/device_files/.
+		cp *.info $WORKING_DIR/$LINUX32IMAGE/device_files/.
+
+		cp $WORKING_DIR/$NATIVEIMAGE/bin/device_files/xc32_device.info $WORKING_DIR/$LINUX32IMAGE/pic32mx/.
+		cp $WORKING_DIR/$NATIVEIMAGE/bin/device_files/xc32_device.info $WORKING_DIR/$LINUX32IMAGE/.
+		assert_success $? "ERROR: Copying xc32_device info file"
+
+		assert_success $? "ERROR: Copying device info files"
+		cp $WORKING_DIR/$LINUX32IMAGE/bin/device_files/xc32_device.info $WORKING_DIR/$LINUX32IMAGE/bin/.
+		assert_success $? "ERROR: Copying xc32_device info file"
+
+		cp .LanguageToolSuite $WORKING_DIR/$LINUX32IMAGE/bin/
+		assert_success $? "ERROR: Copying .LanguageToolSuite file"
+
+        cp deviceSupport.xml $WORKING_DIR/$LINUX32IMAGE/bin/
+        assert_success $? "ERROR: Copying deviceSupport.xml file to $LINUX32IMAGE"
+fi
+
+cd $WORKING_DIR
+
+#######################################################################################################
+
+
 if [ "x$SKIPNATIVE" == "x" ] ; then
 
     # Build native cross compiler
@@ -351,13 +481,13 @@ if [ "x$SKIPNATIVE" == "x" ] ; then
 
     # Configure cross binutils
     echo `date` " Configuring cross binutils build in $WORKING_DIR/native-build..." >> $LOGFILE
-    ../../chipKIT-cxx/src45x/binutils/configure $HOSTMACHINE --target=pic32mx --prefix="$WORKING_DIR/$NATIVEIMAGE/pic32-tools" --libexecdir="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin" --disable-nls --disable-tui --disable-gdbtk --disable-shared --enable-static --disable-threads --disable-bootstrap --with-dwarf2 --enable-multilib --without-newlib --disable-sim --with-lib-path=: --enable-poison-system-directories --program-prefix=pic32- --with-bugurl=http://www.chipkit.org/forums
+    ../../chipKIT-cxx/src45x/binutils/configure $HOSTMACHINE --target=pic32mx --prefix="$WORKING_DIR/$NATIVEIMAGE/pic32-tools" --libexecdir="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin" --disable-nls --disable-tui --disable-gdbtk --disable-shared --enable-static --disable-threads --disable-bootstrap --with-dwarf2 --enable-multilib --without-newlib --disable-sim --with-lib-path=: --enable-poison-system-directories --program-prefix=pic32- --with-bugurl=http://www.chipkit.org/forums --disable-werror
 
     assert_success $? "ERROR: configuring cross binutils build"
 
     # Make cross binutils and install it
     echo `date` " Making all in $WORKING_DIR/native-build/binutils and installing..." >> $LOGFILE
-    make CFLAGS="-O2 -DCHIPKIT_PIC32" all -j5
+    make CFLAGS="-O2 -DCHIPKIT_PIC32" all -j5 MCHP_VERSION=${MCHP_VERSION}
     assert_success $? "ERROR: making/installing cross binutils build"
     make install
     assert_success $? "ERROR: making/installing cross binutils build"
@@ -460,6 +590,7 @@ if [ "x$SKIPNATIVE" == "x" ] ; then
         rm -rf zlib
     fi
     cp -r ../chipKIT-cxx/src45x/zlib .
+
     assert_success $? "ERROR: copy src45x/zlib directory to $WORKING_DIR/native-build/zlib"
 
     cd zlib
@@ -488,7 +619,7 @@ if [ "x$SKIPNATIVE" == "x" ] ; then
     echo `date` " Configuring cross compiler build in $WORKING_DIR/native-build..." >> $LOGFILE
     echo AR_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ar" AS_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as" LD_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld" ../../chipKIT-cxx/src45x/gcc/configure --target=pic32mx --program-prefix=pic32- --disable-threads --disable-libmudflap --disable-libssp --enable-sgxx-sde-multilibs --with-gnu-as --with-gnu-ld --enable-languages=c,c++ --disable-shared --enable-static --with-newlib --disable-nls --disable-libgomp --without-headers --disable-libffi --disable-bootstrap --disable-decimal-float --disable-libquadmath --disable-__cxa_atexit --disable-libfortran --disable-libstdcxx-pch --prefix="$WORKING_DIR/$NATIVEIMAGE/pic32-tools" --libexecdir="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin" --with-dwarf2 --with-gmp="$WORKING_DIR/native-build/host-libs" "$LIBHOST" --disable-lto  --with-bugurl=http://www.chipkit.org/forums  XGCC_FLAGS_FOR_TARGET="-fno-rtti -fno-enforce-eh-specs" --enable-cxx-flags="-fno-exceptions -ffunction-sections" > gcc-native-log.txt
 
-    AR_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ar" AS_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as" LD_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld" ../../chipKIT-cxx/src45x/gcc/configure --target=pic32mx --program-prefix=pic32- --disable-threads --disable-libmudflap --disable-libssp --enable-sgxx-sde-multilibs --with-gnu-as --with-gnu-ld --enable-languages=c,c++ --disable-shared --enable-static --with-newlib --disable-nls --disable-libgomp --without-headers --disable-libffi --disable-bootstrap --disable-decimal-float --disable-libquadmath --disable-__cxa_atexit --disable-libfortran --disable-libstdcxx-pch --prefix="$WORKING_DIR/$NATIVEIMAGE/pic32-tools" --libexecdir="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin" --with-dwarf2 --with-gmp="$WORKING_DIR/native-build/host-libs" "$LIBHOST" --disable-lto  --with-bugurl=http://www.chipkit.org/forums  XGCC_FLAGS_FOR_TARGET="-fno-rtti -fno-enforce-eh-specs" --enable-cxx-flags="-fno-exceptions -ffunction-sections"  >> gcc-native-log.txt
+    AR_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ar" AS_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as" LD_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld" ../../chipKIT-cxx/src45x/gcc/configure --target=pic32mx --program-prefix=pic32- --disable-threads --disable-libmudflap --disable-libssp --enable-sgxx-sde-multilibs --with-gnu-as --with-gnu-ld --enable-languages=c,c++ --disable-shared --enable-static --with-newlib --disable-nls --disable-libgomp --without-headers --disable-libffi --disable-bootstrap --disable-decimal-float --disable-libquadmath --disable-__cxa_atexit --disable-libfortran --disable-libstdcxx-pch --prefix="$WORKING_DIR/$NATIVEIMAGE/pic32-tools" --libexecdir="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin" --with-dwarf2 --with-gmp="$WORKING_DIR/native-build/host-libs" "$LIBHOST" --disable-lto  --with-bugurl=http://www.chipkit.org/forums  XGCC_FLAGS_FOR_TARGET="-frtti -fexceptions -fno-enforce-eh-specs -mno-smart-io" --enable-cxx-flags="-mno-smart-io" >> gcc-native-log.txt
     assert_success $? "ERROR: configuring cross build"
 
     # Make cross compiler and install it
@@ -680,7 +811,7 @@ if [ "x$SKIPLINUX32" == "x" ] ; then
 
         # Configure linux-cross binutils
         echo `date` " Configuring linux32 binutils build in $WORKING_DIR/linux32-build..." >> $LOGFILE
-        ../../chipKIT-cxx/src45x/binutils/configure $BUILDMACHINE --target=pic32mx --prefix=$WORKING_DIR/$LINUX32IMAGE/pic32-tools --libexecdir=$WORKING_DIR/$LINUX32IMAGE/pic32-tools/pic32mx/bin --host=$LINUX32_HOST_PREFIX --disable-nls --disable-tui --disable-gdbtk --disable-shared --enable-static --disable-threads --disable-bootstrap  --with-dwarf2 --enable-multilib --without-newlib --disable-sim --with-lib-path=: --enable-poison-system-directories --program-prefix=pic32- --with-bugurl=http://www.chipkit.org/forums
+        ../../chipKIT-cxx/src45x/binutils/configure $BUILDMACHINE --target=pic32mx --prefix=$WORKING_DIR/$LINUX32IMAGE/pic32-tools --libexecdir=$WORKING_DIR/$LINUX32IMAGE/pic32-tools/pic32mx/bin --host=$LINUX32_HOST_PREFIX --disable-nls --disable-tui --disable-gdbtk --disable-shared --enable-static --disable-threads --disable-bootstrap  --with-dwarf2 --enable-multilib --without-newlib --disable-sim --with-lib-path=: --enable-poison-system-directories --program-prefix=pic32- --with-bugurl=http://www.chipkit.org/forums --disable-werror
         assert_success $? "ERROR: configuring linux32 binutils build"
 
         # Make linux-cross binutils and install it
@@ -919,7 +1050,7 @@ cd binutils
 
 # Configure mingw32-cross binutils
 echo `date` " Configuring win32 binutils build in $WORKING_DIR/win32-build..." >> $LOGFILE
-../../chipKIT-cxx/src45x/binutils/configure  --target=pic32mx --prefix=$WORKING_DIR/win32-image/pic32-tools --libexecdir=$WORKING_DIR/win32-image/pic32mx/bin --host=$MINGW32_HOST_PREFIX --disable-nls --disable-tui --disable-gdbtk --disable-shared --enable-static --disable-threads --disable-bootstrap  --with-dwarf2 --enable-multilib --without-newlib --disable-sim --with-lib-path=: --enable-poison-system-directories --program-prefix=pic32- --with-bugurl=http://www.chipkit.org/forums
+../../chipKIT-cxx/src45x/binutils/configure  --target=pic32mx --prefix=$WORKING_DIR/win32-image/pic32-tools --libexecdir=$WORKING_DIR/win32-image/pic32mx/bin --host=$MINGW32_HOST_PREFIX --disable-nls --disable-tui --disable-gdbtk --disable-shared --enable-static --disable-threads --disable-bootstrap  --with-dwarf2 --enable-multilib --without-newlib --disable-sim --with-lib-path=: --enable-poison-system-directories --program-prefix=pic32- --with-bugurl=http://www.chipkit.org/forums --disable-werror
 assert_success $? "ERROR: configuring win32 binutils build"
 
 # Make MinGW32-cross binutils and install it
@@ -1157,7 +1288,7 @@ cd binutils
 
 # Configure ARMLINUX32-cross binutils
 echo `date` " Configuring arm-linux binutils build in $WORKING_DIR/arm-linux-build..." >> $LOGFILE
-../../chipKIT-cxx/src45x/binutils/configure  --target=pic32mx --prefix=$WORKING_DIR/arm-linux-image/pic32-tools --libexecdir=$WORKING_DIR/arm-linux-image/pic32mx/bin --host=$ARMLINUX32_HOST_PREFIX --disable-nls --disable-tui --disable-gdbtk --disable-shared --enable-static --disable-threads --disable-bootstrap  --with-dwarf2 --enable-multilib --without-newlib --disable-sim --with-lib-path=: --enable-poison-system-directories --program-prefix=pic32- --with-bugurl=http://www.chipkit.org/forums
+../../chipKIT-cxx/src45x/binutils/configure  --target=pic32mx --prefix=$WORKING_DIR/arm-linux-image/pic32-tools --libexecdir=$WORKING_DIR/arm-linux-image/pic32mx/bin --host=$ARMLINUX32_HOST_PREFIX --disable-nls --disable-tui --disable-gdbtk --disable-shared --enable-static --disable-threads --disable-bootstrap  --with-dwarf2 --enable-multilib --without-newlib --disable-sim --with-lib-path=: --enable-poison-system-directories --program-prefix=pic32- --with-bugurl=http://www.chipkit.org/forums --disable-werror
 assert_success $? "ERROR: configuring arm-linux binutils build"
 
 # Make ARMLINUX32-cross binutils and install it
