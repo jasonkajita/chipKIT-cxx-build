@@ -27,12 +27,12 @@ echo "$BASH_SOURCE START BUILD..."
 # Figure out which MinGW compiler we have. Candidates are:
 # i586-mingw32msvc-gcc   (Ubuntu)
 # i386-mingw32-gcc       (Fedora)
-if [ "x$MINGW_HOST_PREFIX" == "x" ]; then
+if [ "x$MINGW32_HOST_PREFIX" == "x" ]; then
  MINGW_GCC=`which i386-mingw32-gcc`
  if [ "x$MINGW_GCC" != "x" ] ; then
-  MINGW_HOST_PREFIX=i386-mingw32
+  MINGW32_HOST_PREFIX=i386-mingw32
  else
-  MINGW_HOST_PREFIX=i586-mingw32msvc
+  MINGW32_HOST_PREFIX=i586-mingw32msvc
  fi
  unset MINGW_GCC
 fi
