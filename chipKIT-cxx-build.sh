@@ -1,7 +1,12 @@
 #!/bin/bash
 
-MCHP_RESOURCE=
-MCHP_VERSION=
+MCHP_RESOURCE=A
+MCHP_VERSION=1.30
+
+
+MCHP_RESOURCE="\'${MCHP_RESOURCE}\'"
+export MCHP_VERSION
+export MCHP_RESOURCE
 
 SOURCE_GITHUB_ACCOUNT=jasonkajita
 PLIB_IMAGE_TAR=plib-image-20120428.tar.bz2
@@ -369,7 +374,7 @@ assert_success $? "ERROR: Copying .LanguageToolSuite file"
 cp deviceSupport.xml $WORKING_DIR/$NATIVEIMAGE/bin/
 assert_success $? "ERROR: Copying deviceSupport.xml file"
 
-if [ "$WINDOWS" == "yes" ] ; then
+if [ "x$WINDOWS" != "xno" ] ; then
 
         if [[ ! -e $WORKING_DIR/win32-image/bin ]] ; then
           mkdir $WORKING_DIR/win32-image/bin
@@ -517,7 +522,7 @@ if [ "x$SKIPNATIVE" == "x" ] ; then
 
     # Make cross binutils and install it
     echo `date` " Making all in $WORKING_DIR/native-build/binutils and installing..." >> $LOGFILE
-    make CFLAGS="-O2 -DCHIPKIT_PIC32" all -j5 MCHP_VERSION=${MCHP_VERSION}
+    make CFLAGS="-O2 -DCHIPKIT_PIC32 -DMCHP_VERSION=${MCHP_VERSION}" all -j5 
     assert_success $? "ERROR: making/installing cross binutils build"
     make install
     assert_success $? "ERROR: making/installing cross binutils build"
@@ -846,7 +851,7 @@ if [ "x$SKIPLINUX32" == "x" ] ; then
 
         # Make linux-cross binutils and install it
         echo `date` " Making all in $WORKING_DIR/linux32-build/binutils and installing..." >> $LOGFILE
-        make all CFLAGS="-O2 -DCHIPKIT_PIC32" -j5
+        make all CFLAGS="-O2 -DCHIPKIT_PIC32 -DMCHP_VERSION=${MCHP_VERSION}" -j5
         assert_success $? "ERROR: making/installing linux32 Canadian-cross binutils build"
         make CFLAGS="-O2 -DCHIPKIT_PIC32" install
         assert_success $? "ERROR: making/installing linux32 Canadian-cross binutils build"
@@ -1085,7 +1090,7 @@ assert_success $? "ERROR: configuring win32 binutils build"
 
 # Make MinGW32-cross binutils and install it
 echo `date` " Making all in $WORKING_DIR/win32-build/binutils and installing..." >> $LOGFILE
-make CFLAGS="-O2 -DCHIPKIT_PIC32 -D_WIN32_WINNT=0x0501 -DWINVER=0x501" all -j4
+make CFLAGS="-O2 -DCHIPKIT_PIC32 -D_WIN32_WINNT=0x0501 -DWINVER=0x501 -DMCHP_VERSION=${MCHP_VERSION}" all -j4
 assert_success $? "ERROR: making/installing win32 Canadian-cross binutils build"
 make CFLAGS="-O2 -DCHIPKIT_PIC32 -D_WIN32_WINNT=0x0501 -DWINVER=0x501" install
 assert_success $? "ERROR: making/installing win32 Canadian-cross binutils build"
@@ -1323,7 +1328,7 @@ assert_success $? "ERROR: configuring arm-linux binutils build"
 
 # Make ARMLINUX32-cross binutils and install it
 echo `date` " Making all in $WORKING_DIR/arm-linux-build/binutils and installing..." >> $LOGFILE
-make CFLAGS="-Os -DCHIPKIT_PIC32" all -j4
+make CFLAGS="-Os -DCHIPKIT_PIC32 -DMCHP_VERSION=${MCHP_VERSION}" all -j4
 assert_success $? "ERROR: making/installing arm-linux Canadian-cross binutils build"
 make CFLAGS="-Os -DCHIPKIT_PIC32" install
 assert_success $? "ERROR: making/installing arm-linux Canadian-cross binutils build"
