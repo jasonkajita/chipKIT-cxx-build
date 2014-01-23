@@ -1,7 +1,12 @@
 #!/bin/bash
 
-MCHP_RESOURCE=
-MCHP_VERSION=
+MCHP_RESOURCE=A
+MCHP_VERSION=1.30
+
+
+MCHP_RESOURCE="\'${MCHP_RESOURCE}\'"
+export MCHP_VERSION
+export MCHP_RESOURCE
 
 SOURCE_GITHUB_ACCOUNT=jasonkajita
 PLIB_IMAGE_TAR=plib-image-20120428.tar.bz2
@@ -329,161 +334,6 @@ fi
 cd ..
 
 
-######### Building Info files ################
-
-status_update "Building device info files"
-cd $WORKING_DIR/chipKIT-cxx/src45x/c30_resource/src
-rm $WORKING_DIR/chipKIT-cxx/src45x/c30_resource/src/xc32/*.info
-./xc32-build.sh
-
-status_update "Installing info files and .LanguageToolSuite file"
-
-cd $WORKING_DIR/chipKIT-cxx/src45x/c30_resource/src/xc32
-
-if [[ ! -e $WORKING_DIR/$NATIVEIMAGE/bin ]] ; then
- mkdir $WORKING_DIR/$NATIVEIMAGE/bin
-fi
-
-	# TODO: Copying to multiple places for now. Eventually consolidate to /bin/device_files
-	mkdir -p $WORKING_DIR/$NATIVEIMAGE/bin/device_files
-	cp *.info $WORKING_DIR/$NATIVEIMAGE/bin/device_files/.
-
-	mkdir -p $WORKING_DIR/$NATIVEIMAGE/pic32mx/device_files/.
-	cp *.info $WORKING_DIR/$NATIVEIMAGE/pic32mx/device_files/.
-
-	mkdir -p $WORKING_DIR/$NATIVEIMAGE/pic32mx/bin/device_files/.
-	cp *.info $WORKING_DIR/$NATIVEIMAGE/pic32mx/bin/device_files/.
-
-	mkdir -p $WORKING_DIR/$NATIVEIMAGE/device_files/.
-	cp *.info $WORKING_DIR/$NATIVEIMAGE/device_files/.
-
-	cp $WORKING_DIR/$NATIVEIMAGE/bin/device_files/xc32_device.info $WORKING_DIR/$NATIVEIMAGE/pic32mx/.
-	assert_success $? "ERROR: Copying xc32_device info file"
-
-	cp $WORKING_DIR/$NATIVEIMAGE/bin/device_files/xc32_device.info $WORKING_DIR/$NATIVEIMAGE/bin/.
-	assert_success $? "ERROR: Copying xc32_device info file"
-
-cp .LanguageToolSuite $WORKING_DIR/$NATIVEIMAGE/bin/
-assert_success $? "ERROR: Copying .LanguageToolSuite file"
-
-cp deviceSupport.xml $WORKING_DIR/$NATIVEIMAGE/bin/
-assert_success $? "ERROR: Copying deviceSupport.xml file"
-
-if [ "$WINDOWS" == "yes" ] ; then
-
-        if [[ ! -e $WORKING_DIR/win32-image/bin ]] ; then
-          mkdir $WORKING_DIR/win32-image/bin
-        fi
-
-		mkdir -p $WORKING_DIR/win32-image/bin/device_files
-		cp *.info $WORKING_DIR/win32-image/bin/device_files/.
-
-		mkdir -p $WORKING_DIR/win32-image/pic32mx/device_files/.
-		cp *.info $WORKING_DIR/win32-image/pic32mx/device_files/.
-
-		mkdir -p $WORKING_DIR/win32-image/pic32mx/bin/device_files/.
-		cp *.info $WORKING_DIR/win32-image/pic32mx/bin/device_files/.
-
-		mkdir -p $WORKING_DIR/win32-image/device_files/.
-		cp *.info $WORKING_DIR/win32-image/device_files/.
-
-		cp $WORKING_DIR/$NATIVEIMAGE/bin/device_files/xc32_device.info $WORKING_DIR/win32-image/pic32mx/.
-		cp $WORKING_DIR/$NATIVEIMAGE/bin/device_files/xc32_device.info $WORKING_DIR/win32-image/.
-		assert_success $? "ERROR: Copying xc32_device info file"
-
-		assert_success $? "ERROR: Copying device info files"
-		cp $WORKING_DIR/win32-image/bin/device_files/xc32_device.info $WORKING_DIR/win32-image/bin/.
-		assert_success $? "ERROR: Copying xc32_device info file"
-
-	cp .LanguageToolSuite $WORKING_DIR/win32-image/bin/
-	assert_success $? "ERROR: Copying .LanguageToolSuite file"
-	cp deviceSupport.xml $WORKING_DIR/win32-image/bin/
-	assert_success $? "ERROR: Copying deviceSupport.xml file for win32-image"
-
-fi
-
-if [[ ! -e $WORKING_DIR/export-image/bin ]] ; then
- mkdir $WORKING_DIR/export-image/bin
-fi
-
-	mkdir $WORKING_DIR/export-image/bin/device_files
-	cp *.info $WORKING_DIR/export-image/bin/device_files/.
-	assert_success $? "ERROR: Copying device info files"
-	cp $WORKING_DIR/export-image/bin/device_files/xc32_device.info $WORKING_DIR/export-image/bin/.
-	assert_success $? "ERROR: Copying xc32_device info file"
-	cp .LanguageToolSuite $WORKING_DIR/export-image/bin/
-	assert_success $? "ERROR: Copying .LanguageToolSuite file"
-	cp deviceSupport.xml $WORKING_DIR/export-image/bin/
-	assert_success $? "ERROR: Copying deviceSupport.xml file to export-image"
-
-if [ "x$LINUX32IMAGE" != "x" ] ; then
-
-        if [[ ! -e $WORKING_DIR/$LINUX32IMAGE/bin ]] ; then
-          mkdir $WORKING_DIR/$LINUX32IMAGE/bin
-        fi
-
-		mkdir -p $WORKING_DIR/$LINUX32IMAGE/bin/device_files
-		cp *.info $WORKING_DIR/$LINUX32IMAGE/bin/device_files/.
-
-		mkdir -p $WORKING_DIR/$LINUX32IMAGE/pic32mx/device_files/.
-		cp *.info $WORKING_DIR/$LINUX32IMAGE/pic32mx/device_files/.
-	
-		mkdir -p $WORKING_DIR/$LINUX32IMAGE/pic32mx/bin/device_files/.
-		cp *.info $WORKING_DIR/$LINUX32IMAGE/pic32mx/bin/device_files/.
-
-		mkdir -p $WORKING_DIR/$LINUX32IMAGE/device_files/.
-		cp *.info $WORKING_DIR/$LINUX32IMAGE/device_files/.
-
-		cp $WORKING_DIR/$NATIVEIMAGE/bin/device_files/xc32_device.info $WORKING_DIR/$LINUX32IMAGE/pic32mx/.
-		cp $WORKING_DIR/$NATIVEIMAGE/bin/device_files/xc32_device.info $WORKING_DIR/$LINUX32IMAGE/.
-		assert_success $? "ERROR: Copying xc32_device info file"
-
-		assert_success $? "ERROR: Copying device info files"
-		cp $WORKING_DIR/$LINUX32IMAGE/bin/device_files/xc32_device.info $WORKING_DIR/$LINUX32IMAGE/bin/.
-		assert_success $? "ERROR: Copying xc32_device info file"
-
-		cp .LanguageToolSuite $WORKING_DIR/$LINUX32IMAGE/bin/
-		assert_success $? "ERROR: Copying .LanguageToolSuite file"
-
-        cp deviceSupport.xml $WORKING_DIR/$LINUX32IMAGE/bin/
-        assert_success $? "ERROR: Copying deviceSupport.xml file to $LINUX32IMAGE"
-fi
-
-if [[ ! -e $WORKING_DIR/arm-linux-image/bin ]] ; then
-  mkdir $WORKING_DIR/arm-linux-image/bin
-fi
-
-mkdir -p $WORKING_DIR/arm-linux-image/bin/device_files
-cp *.info $WORKING_DIR/arm-linux-image/bin/device_files/.
-
-mkdir -p $WORKING_DIR/arm-linux-image/pic32mx/device_files/.
-cp *.info $WORKING_DIR/arm-linux-image/pic32mx/device_files/.
-
-mkdir -p $WORKING_DIR/arm-linux-image/pic32mx/bin/device_files/.
-cp *.info $WORKING_DIR/arm-linux-image/pic32mx/bin/device_files/.
-
-mkdir -p $WORKING_DIR/arm-linux-image/device_files/.
-cp *.info $WORKING_DIR/arm-linux-image/device_files/.
-
-cp $WORKING_DIR/$NATIVEIMAGE/bin/device_files/xc32_device.info $WORKING_DIR/arm-linux-image/pic32mx/.
-cp $WORKING_DIR/$NATIVEIMAGE/bin/device_files/xc32_device.info $WORKING_DIR/arm-linux-image/.
-assert_success $? "ERROR: Copying xc32_device info file"
-
-assert_success $? "ERROR: Copying device info files"
-cp $WORKING_DIR/arm-linux-image/bin/device_files/xc32_device.info $WORKING_DIR/arm-linux-image/bin/.
-assert_success $? "ERROR: Copying xc32_device info file"
-
-cp .LanguageToolSuite $WORKING_DIR/arm-linux-image/bin/
-assert_success $? "ERROR: Copying .LanguageToolSuite file"
-
-cp deviceSupport.xml $WORKING_DIR/arm-linux-image/bin/
-assert_success $? "ERROR: Copying deviceSupport.xml file for arm-linux-image"
-
-cd $WORKING_DIR
-
-#######################################################################################################
-
-
 if [ "x$SKIPNATIVE" == "x" ] ; then
 
     # Build native cross compiler
@@ -517,7 +367,7 @@ if [ "x$SKIPNATIVE" == "x" ] ; then
 
     # Make cross binutils and install it
     echo `date` " Making all in $WORKING_DIR/native-build/binutils and installing..." >> $LOGFILE
-    make CFLAGS="-O2 -DCHIPKIT_PIC32" all -j5 MCHP_VERSION=${MCHP_VERSION}
+    make CFLAGS="-O2 -DCHIPKIT_PIC32 -DMCHP_VERSION=${MCHP_VERSION}" all -j5 
     assert_success $? "ERROR: making/installing cross binutils build"
     make install
     assert_success $? "ERROR: making/installing cross binutils build"
@@ -846,7 +696,7 @@ if [ "x$SKIPLINUX32" == "x" ] ; then
 
         # Make linux-cross binutils and install it
         echo `date` " Making all in $WORKING_DIR/linux32-build/binutils and installing..." >> $LOGFILE
-        make all CFLAGS="-O2 -DCHIPKIT_PIC32" -j5
+        make all CFLAGS="-O2 -DCHIPKIT_PIC32 -DMCHP_VERSION=${MCHP_VERSION}" -j5
         assert_success $? "ERROR: making/installing linux32 Canadian-cross binutils build"
         make CFLAGS="-O2 -DCHIPKIT_PIC32" install
         assert_success $? "ERROR: making/installing linux32 Canadian-cross binutils build"
@@ -1085,7 +935,7 @@ assert_success $? "ERROR: configuring win32 binutils build"
 
 # Make MinGW32-cross binutils and install it
 echo `date` " Making all in $WORKING_DIR/win32-build/binutils and installing..." >> $LOGFILE
-make CFLAGS="-O2 -DCHIPKIT_PIC32 -D_WIN32_WINNT=0x0501 -DWINVER=0x501" all -j4
+make CFLAGS="-O2 -DCHIPKIT_PIC32 -D_WIN32_WINNT=0x0501 -DWINVER=0x501 -DMCHP_VERSION=${MCHP_VERSION}" all -j4
 assert_success $? "ERROR: making/installing win32 Canadian-cross binutils build"
 make CFLAGS="-O2 -DCHIPKIT_PIC32 -D_WIN32_WINNT=0x0501 -DWINVER=0x501" install
 assert_success $? "ERROR: making/installing win32 Canadian-cross binutils build"
@@ -1323,7 +1173,7 @@ assert_success $? "ERROR: configuring arm-linux binutils build"
 
 # Make ARMLINUX32-cross binutils and install it
 echo `date` " Making all in $WORKING_DIR/arm-linux-build/binutils and installing..." >> $LOGFILE
-make CFLAGS="-Os -DCHIPKIT_PIC32" all -j4
+make CFLAGS="-Os -DCHIPKIT_PIC32 -DMCHP_VERSION=${MCHP_VERSION}" all -j4
 assert_success $? "ERROR: making/installing arm-linux Canadian-cross binutils build"
 make CFLAGS="-Os -DCHIPKIT_PIC32" install
 assert_success $? "ERROR: making/installing arm-linux Canadian-cross binutils build"
