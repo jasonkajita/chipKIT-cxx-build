@@ -85,7 +85,7 @@ SKIPLINUX32=""
 SKIPARMLINUX="yes"
 SKIPGRAPHITE="yes"
 SKIPMULTIPLENEWLIB="yes"
-SKIPPLIBIMAGE="yes"
+SKIPPLIBIMAGE=""
 NATIVEIMAGE=`uname`
 NATIVEIMAGE+="-image"
 echo "Native image is $NATIVEIMAGE"
@@ -371,7 +371,7 @@ if [ "x$SKIPNATIVE" == "x" ] ; then
 
     # Make cross binutils and install it
     echo `date` " Making all in $WORKING_DIR/native-build/binutils and installing..." >> $LOGFILE
-    make CFLAGS="-O2 -DCHIPKIT_PIC32 -DMCHP_VERSION=${MCHP_VERSION}" all -j5 
+    make CFLAGS="-O2 -DCHIPKIT_PIC32 -DMCHP_VERSION=${MCHP_VERSION}" all -j4
     assert_success $? "ERROR: making/installing cross binutils build"
     make install
     assert_success $? "ERROR: making/installing cross binutils build"
@@ -399,7 +399,7 @@ if [ "x$SKIPNATIVE" == "x" ] ; then
 
     # Make native gmp and install it
     echo `date` " Making all in $WORKING_DIR/native-build/gmp and installing..." >> $LOGFILE
-    make all -j5 >> gmp-make-log.txt
+    make all -j4 >> gmp-make-log.txt
     assert_success $? "ERROR: making/installing gmp build"
     make install
     assert_success $? "ERROR: making/installing gmp build"
@@ -514,14 +514,14 @@ if [ "x$SKIPNATIVE" == "x" ] ; then
     STRIP_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-strip"  \
     AR_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ar"  \
     AS_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as" \
-    LD_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld" -j5 >> gcc-native-log.txt
+    LD_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld" -j2 >> gcc-native-log.txt
     make all-gcc CFLAGS="-O2 -DCHIPKIT_PIC32" \
     NM_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-nm" \
     RANLIB_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ranlib" \
     STRIP_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-strip"  \
     AR_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ar"  \
     AS_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as" \
-    LD_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld" -j4
+    LD_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld" -j2
     assert_success $? "ERROR: making/installing cross build all-gcc"
 
     make CFLAGS="-O2 -DCHIPKIT_PIC32" install-gcc
@@ -543,7 +543,7 @@ if [ "x$SKIPNATIVE" == "x" ] ; then
     GCC_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc CC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc -I$WORKING_DIR/chipKIT-cxx/src45x/gcc/ginclude" CXX_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ CPP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ AR_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ar RANLIB_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ranlib READELF_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-readelf STRIP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-strip AS_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as LD_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld ../../pic32-newlib/configure $NEWLIB_CONFIGURE_FLAGS  --prefix=$WORKING_DIR/$NATIVEIMAGE/pic32-tools --libexecdir=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin CFLAGS_FOR_TARGET="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections -DSMALL_MEMORY -D_NO_GETLOGIN -D_NO_GETPWENT -D_NO_GETUT -D_NO_GETPASS -D_NO_SIGSET" CCASFLAGS_FOR_TARGET="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections -DSMALL_MEMORY -D_NO_GETLOGIN -D_NO_GETPWENT -D_NO_GETUT -D_NO_GETPASS -D_NO_SIGSET" XGCC_FLAGS_FOR_TARGET="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections" --enable-cxx-flags="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections"
     assert_success $? "ERROR: Configure Newlib for native build"
 
-    make all -j4 CFLAGS_FOR_TARGET="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections -DSMALL_MEMORY -D_NO_GETLOGIN -D_NO_GETPWENT -D_NO_GETUT -D_NO_GETPASS -D_NO_SIGSET" CCASFLAGS_FOR_TARGET="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections -DSMALL_MEMORY -D_NO_GETLOGIN -D_NO_GETPWENT -D_NO_GETUT -D_NO_GETPASS -D_NO_SIGSET" XGCC_FLAGS_FOR_TARGET="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections"
+    make all -j2 CFLAGS_FOR_TARGET="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections -DSMALL_MEMORY -D_NO_GETLOGIN -D_NO_GETPWENT -D_NO_GETUT -D_NO_GETPASS -D_NO_SIGSET" CCASFLAGS_FOR_TARGET="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections -DSMALL_MEMORY -D_NO_GETLOGIN -D_NO_GETPWENT -D_NO_GETUT -D_NO_GETPASS -D_NO_SIGSET" XGCC_FLAGS_FOR_TARGET="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections"
     assert_success $? "ERROR: Make newlib for native build"
     make install
     assert_success $? "ERROR: Install newlib for native build"
@@ -590,7 +590,7 @@ if [ "x$SKIPNATIVE" == "x" ] ; then
     STRIP_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-strip"  \
     AR_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ar"  \
     AS_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as" \
-    LD_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld" -j5
+    LD_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld" -j2
     assert_success $? "ERROR: making/installing cross build all"
     make install
     assert_success $? "ERROR: making/installing cross build install"
@@ -641,19 +641,19 @@ if [ "x$SKIPLIBS" == "x" ] ; then
     make DESTROOT=$WORKING_DIR/$NATIVEIMAGE/pic32-tools all
     assert_success $? "ERROR: making libraries for cross build"
 
-    make DESTROOT=$WORKING_DIR/$NATIVEIMAGE/pic32-tools install -j5
+    make DESTROOT=$WORKING_DIR/$NATIVEIMAGE/pic32-tools install -j2
     assert_success $? "ERROR: making libraries for $NATIVEIMAGE cross build"
 
     if [ "x$LINUX32IMAGE" != "x" ] ; then
-        make DESTROOT="$WORKING_DIR/$LINUX32IMAGE/pic32-tools" install -j5
+        make DESTROOT="$WORKING_DIR/$LINUX32IMAGE/pic32-tools" install -j2
         assert_success $? "ERROR: making libraries for linux32-image cross build"
     fi
 
-    make DESTROOT="$WORKING_DIR/export-image/pic32-tools" install -j5
+    make DESTROOT="$WORKING_DIR/export-image/pic32-tools" install -j2
     assert_success $? "ERROR: making libraries for export-image cross build"
-    make DESTROOT="$WORKING_DIR/win32-image/pic32-tools" install -j5
+    make DESTROOT="$WORKING_DIR/win32-image/pic32-tools" install -j2
     assert_success $? "ERROR: making libraries for win32-image cross build"
-    make DESTROOT="$WORKING_DIR/arm-linux-image/pic32-tools" install -j4
+    make DESTROOT="$WORKING_DIR/arm-linux-image/pic32-tools" install -j2
     assert_success $? "ERROR: making libraries for arm-linux-image cross build"
 
     status_update "cross-compiler library build complete"
@@ -700,7 +700,7 @@ if [ "x$SKIPLINUX32" == "x" ] ; then
 
         # Make linux-cross binutils and install it
         echo `date` " Making all in $WORKING_DIR/linux32-build/binutils and installing..." >> $LOGFILE
-        make all CFLAGS="-O2 -DCHIPKIT_PIC32 -DMCHP_VERSION=${MCHP_VERSION}" -j5
+        make all CFLAGS="-O2 -DCHIPKIT_PIC32 -DMCHP_VERSION=${MCHP_VERSION}" -j2
         assert_success $? "ERROR: making/installing linux32 Canadian-cross binutils build"
         make CFLAGS="-O2 -DCHIPKIT_PIC32" install
         assert_success $? "ERROR: making/installing linux32 Canadian-cross binutils build"
@@ -721,7 +721,7 @@ if [ "x$SKIPLINUX32" == "x" ] ; then
 
         # Make linux gmp and install it
         echo `date` " Making all in $WORKING_DIR/linux32-build/gmp and installing..." >> $LOGFILE
-        make all -j5
+        make all -j2
         assert_success $? "ERROR: making/installing gmp build"
         make install
         assert_success $? "ERROR: making/installing gmp build"
@@ -742,7 +742,7 @@ if [ "x$SKIPLINUX32" == "x" ] ; then
 
             # Make native ppl and install it
             echo `date` " Making all in $WORKING_DIR/linux32-build/ppl and installing..." >> $LOGFILE
-            make all -j5
+            make all -j2
             assert_success $? "ERROR: making/installing ppl build"
             make install
             assert_success $? "ERROR: making/installing ppl build"
@@ -763,7 +763,7 @@ if [ "x$SKIPLINUX32" == "x" ] ; then
 
             # Make native cloog and install it
             echo `date` " Making all in $WORKING_DIR/linux32-build/cloog and installing..." >> $LOGFILE
-            make all -j5
+            make all -j2
             assert_success $? "ERROR: making/installing cloog build"
             make install
             assert_success $? "ERROR: making/installing cloog build"
@@ -784,7 +784,7 @@ if [ "x$SKIPLINUX32" == "x" ] ; then
 
         # Make native libelf and install it
         echo `date` " Making all in $WORKING_DIR/linux32-build/libelf and installing..." >> $LOGFILE
-        make all -j5
+        make all -j2
         assert_success $? "ERROR: making/installing libelf build"
         make install
         assert_success $? "ERROR: making/installing libelf build"
@@ -803,7 +803,7 @@ if [ "x$SKIPLINUX32" == "x" ] ; then
 
         # Make linux zlib and install it
         echo `date` " Making all in $WORKING_DIR/linux32-build/zlib and installing..." >> $LOGFILE
-        make all -j5
+        make all -j2
         assert_success $? "ERROR: making/installing zlib build - all"
         make install
         assert_success $? "ERROR: making/installing zlib build - install"
@@ -834,7 +834,7 @@ if [ "x$SKIPLINUX32" == "x" ] ; then
         AS_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as" \
         LD_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld" \
         GCC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc" \
-        CC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc" -j5
+        CC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc" -j2
         assert_success $? "ERROR: making/installing linux Canadian-cross compiler build"
         make CFLAGS="-O2 -DCHIPKIT_PIC32" install-gcc
         assert_success $? "ERROR: making/installing linux Canadian-cross compiler build"
@@ -860,7 +860,7 @@ if [ "x$SKIPLINUX32" == "x" ] ; then
 
         echo `date` " Make newlib for $LINUX32IMAGE..." >> $LOGFILE
 
-        make all -j4 CFLAGS_FOR_TARGET="-DCHIPKIT_PIC32 -fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections -DSMALL_MEMORY -D_NO_GETLOGIN -D_NO_GETPWENT -D_NO_GETUT -D_NO_GETPASS -D_NO_SIGSET" CCASFLAGS_FOR_TARGET="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections -DSMALL_MEMORY -D_NO_GETLOGIN -D_NO_GETPWENT -D_NO_GETUT -D_NO_GETPASS -D_NO_SIGSET" XGCC_FLAGS_FOR_TARGET="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections"
+        make all -j2 CFLAGS_FOR_TARGET="-DCHIPKIT_PIC32 -fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections -DSMALL_MEMORY -D_NO_GETLOGIN -D_NO_GETPWENT -D_NO_GETUT -D_NO_GETPASS -D_NO_SIGSET" CCASFLAGS_FOR_TARGET="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections -DSMALL_MEMORY -D_NO_GETLOGIN -D_NO_GETPWENT -D_NO_GETUT -D_NO_GETPASS -D_NO_SIGSET" XGCC_FLAGS_FOR_TARGET="-fno-rtti -fno-exceptions -fomit-frame-pointer -DPREFER_SIZE_OVER_SPEED -D__OPTIMIZE_SIZE__ -Os -fshort-wchar -fno-unroll-loops -fno-enforce-eh-specs -ffunction-sections -fdata-sections"
 
         assert_success $? "ERROR: Make newlib for cross build"
         make CFLAGS="-Os -DCHIPKIT_PIC32" install
@@ -883,7 +883,7 @@ if [ "x$SKIPLINUX32" == "x" ] ; then
         assert_success $? "ERROR: configuring linux32 cross build 2"
 
         make CFLAGS="-O2 -DCHIPKIT_PIC32" all \
-        GCC_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc CC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc -I$WORKING_DIR/chipKIT-cxx/src45x/gcc/ginclude" CXX_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ CPP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ AR_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ar RANLIB_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ranlib READELF_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-readelf STRIP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-strip AS_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as LD_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld  -j4
+        GCC_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc CC_FOR_TARGET="$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-gcc -I$WORKING_DIR/chipKIT-cxx/src45x/gcc/ginclude" CXX_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ CPP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-g++ AR_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ar RANLIB_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-ranlib READELF_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-readelf STRIP_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/bin/pic32-strip AS_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/as LD_FOR_TARGET=$WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/bin/ld  -j2
         make CFLAGS="-O2 -DCHIPKIT_PIC32" install
         assert_success $? "ERROR: installing linux Canadian-cross compiler build"
 
@@ -939,7 +939,7 @@ assert_success $? "ERROR: configuring win32 binutils build"
 
 # Make MinGW32-cross binutils and install it
 echo `date` " Making all in $WORKING_DIR/win32-build/binutils and installing..." >> $LOGFILE
-make CFLAGS="-O2 -DCHIPKIT_PIC32 -D_WIN32_WINNT=0x0501 -DWINVER=0x501 -DMCHP_VERSION=${MCHP_VERSION}" all -j4
+make CFLAGS="-O2 -DCHIPKIT_PIC32 -D_WIN32_WINNT=0x0501 -DWINVER=0x501 -DMCHP_VERSION=${MCHP_VERSION}" all -j2
 assert_success $? "ERROR: making/installing win32 Canadian-cross binutils build"
 make CFLAGS="-O2 -DCHIPKIT_PIC32 -D_WIN32_WINNT=0x0501 -DWINVER=0x501 -DMCHP_VERSION=${MCHP_VERSION}" install
 assert_success $? "ERROR: making/installing win32 Canadian-cross binutils build"
@@ -959,7 +959,7 @@ CPPFLAGS="-fexceptions" ../../chipKIT-cxx/src45x/gmp/configure --enable-cxx --pr
 
 # Make win32 gmp and install it
 echo `date` " Making all in $WORKING_DIR/win32-build/gmp and installing..." >> $LOGFILE
-make CPPFLAGS="-fexceptions" all -j4
+make CPPFLAGS="-fexceptions" all -j
 assert_success $? "ERROR: making/installing gmp build"
 make install
 assert_success $? "ERROR: making/installing gmp build"
@@ -981,7 +981,7 @@ if [ "x$SKIPGRAPHITE" == "x" ]; then
 
     # Make native ppl and install it
     echo `date` " Making all in $WORKING_DIR/win32-build/ppl and installing..." >> $LOGFILE
-    make all -j4
+    make all -j2
     assert_success $? "ERROR: making/installing ppl build"
     make install
     assert_success $? "ERROR: making/installing ppl build"
@@ -1002,7 +1002,7 @@ if [ "x$SKIPGRAPHITE" == "x" ]; then
 
     # Make native cloog and install it
     echo `date` " Making all in $WORKING_DIR/win32-build/cloog and installing..." >> $LOGFILE
-    make all -j4
+    make all -j2
     assert_success $? "ERROR: making/installing cloog build"
     make install
     assert_success $? "ERROR: making/installing cloog build"
