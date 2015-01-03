@@ -9,12 +9,12 @@ export MCHP_VERSION
 export MCHP_RESOURCE
 
 SOURCE_GITHUB_ACCOUNT=jasonkajita
-PLIB_IMAGE_TAR=plib-image-20120428.tar.bz2
+PLIB_IMAGE_TAR=pic32-plib-image-20141120.tar.bz2
 
 GIT_CHIPKIT_CXX_REPO_ROOT=https://github.com/$SOURCE_GITHUB_ACCOUNT/chipKIT-cxx/tarball
 GIT_PIC32_PART_SUPPORT_REPO_ROOT=https://api.github.com/repos/$SOURCE_GITHUB_ACCOUNT/pic32-part-support/tarball
 GIT_PIC32_NEWLIB_REPO_ROOT=https://api.github.com/repos/$SOURCE_GITHUB_ACCOUNT/pic32-newlib
-GIT_PLIB_IMAGE_TAR=https://github.com/downloads/$SOURCE_GITHUB_ACCOUNT/pic32-part-support/$PLIB_IMAGE_TAR
+HTTP_PLIB_IMAGE_TAR="https://portaldev.microchip.com/owncloud/public.php?service=files&t=35725f3d5d733075811d328d03006954&download&path=//$PLIB_IMAGE_TAR"
 
 ##############
 
@@ -82,7 +82,7 @@ CHECKOUT="yes"
 SKIPLIBS=""
 SKIPNATIVE=""
 SKIPLINUX32=""
-SKIPARMLINUX="yes"
+SKIPARMLINUX=""
 SKIPGRAPHITE="yes"
 SKIPMULTIPLENEWLIB="yes"
 SKIPPLIBIMAGE=""
@@ -1426,14 +1426,14 @@ if [ "x$SKIPPLIBIMAGE" == "x" ]
 then
     cd $WORKING_DIR
 
-    echo "Downloading $GIT_PLIB_IMAGE_TAR."
-    echo `date` "Downloading $GIT_PLIB_IMAGE_TAR..." >> $LOGFILE
+    echo "Downloading $HTTP_PLIB_IMAGE_TAR."
+    echo `date` "Downloading $HTTP_PLIB_IMAGE_TAR..." >> $LOGFILE
     if [ -e plib-image ]
     then
         rm -rf plib-image
     fi
-    curl -L $GIT_PLIB_IMAGE_TAR | tar jx
-    assert_success $? "Downloading the peripheral-library image from $GIT_PLIB_IMAGE_TAR"
+    curl -L $HTTP_PLIB_IMAGE_TAR | tar jx
+    assert_success $? "Downloading the peripheral-library image from $HTTP_PLIB_IMAGE_TAR"
 
     if [ "x$NATIVEIMAGE" != "x" ]
     then
