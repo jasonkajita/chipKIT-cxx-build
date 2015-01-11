@@ -46,7 +46,7 @@ if [ "x$MINGW32_HOST_PREFIX" == "x" ]; then
 fi
 
 unset ARMLINUX32_HOST_PREFIX
-ARMLINUX32_HOST_PREFIX=arm-unknown-linux-gnueabi
+ARMLINUX32_HOST_PREFIX=arm-none-linux-gnueabi
 #ARMLINUX32_HOST_PREFIX=arm-linux-gnueabi
 
 # Does notify-send exist?
@@ -1395,18 +1395,21 @@ rmdir  $WORKING_DIR/win32-image/pic32-tools/include
 rm -rf $WORKING_DIR/win32-image/pic32-tools/man
 rm -rf $WORKING_DIR/win32-image/pic32-tools/info
 rm -rf $WORKING_DIR/win32-image/pic32-tools/share
+rm -rf $WORKING_DIR/win32-image/pic32-tools/pic32mx/share
 rm -rf $WORKING_DIR/win32-image/pic32-tools/libsrc
 
 rmdir  $WORKING_DIR/arm-linux-image/pic32-tools/include
 rm -rf $WORKING_DIR/arm-linux-image/pic32-tools/man
 rm -rf $WORKING_DIR/arm-linux-image/pic32-tools/info
 rm -rf $WORKING_DIR/arm-linux-image/pic32-tools/share
+rm -rf $WORKING_DIR/arm-linux-image/pic32-tools/pic32mx/share
 rm -rf $WORKING_DIR/arm-linux-image/pic32-tools/libsrc
 
 rmdir  $WORKING_DIR/$NATIVEIMAGE/pic32-tools/include
 rm -rf $WORKING_DIR/$NATIVEIMAGE/pic32-tools/man
 rm -rf $WORKING_DIR/$NATIVEIMAGE/pic32-tools/info
 rm -rf $WORKING_DIR/$NATIVEIMAGE/pic32-tools/share
+rm -rf $WORKING_DIR/$NATIVEIMAGE/pic32-tools/pic32mx/share
 rm -rf $WORKING_DIR/$NATIVEIMAGE/pic32-tools/libsrc
 
 rm -rf $WORKING_DIR/export-image/pic32-tools/man
@@ -1419,6 +1422,7 @@ if [ "x$LINUX32IMAGE" != "x" ] ; then
     rm -rf $WORKING_DIR/$LINUX32IMAGE/pic32-tools/man
     rm -rf $WORKING_DIR/$LINUX32IMAGE/pic32-tools/info
     rm -rf $WORKING_DIR/$LINUX32IMAGE/pic32-tools/share
+    rm -rf $WORKING_DIR/$LINUX32IMAGE/pic32-tools/pic32mx/share
     rm -rf $WORKING_DIR/$LINUX32IMAGE/pic32-tools/libsrc
 fi
 
