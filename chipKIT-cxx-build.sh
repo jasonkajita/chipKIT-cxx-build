@@ -272,19 +272,19 @@ then
     assert_success $? "Normalize pic32-part-support directory name"
 fi
 
-# if [ "$CHECKOUT" = "yes" ]
-# then
-#    echo "Downloading $GIT_CHIPKIT_CXX_REPO."
-#    echo `date` "Downloading compiler source from $GIT_CHIPKIT_CXX_REPO..." >> $LOGFILE
-#    if [ -e chipKIT-cxx ]
-#    then
-#        rm -rf chipKIT-cxx
-#    fi
-#    curl -L $GIT_CHIPKIT_CXX_REPO | tar zx
-#    assert_success $? "Downloading compiler source from $GIT_CHIPKIT_CXX_REPO"
-#    mv *-chipKIT-cxx-* chipKIT-cxx
-#    assert_success $? "Normalize chipKIT-cxx directory name"
-# fi
+if [ "$CHECKOUT" = "yes" ]
+then
+    echo "Downloading $GIT_CHIPKIT_CXX_REPO."
+    echo `date` "Downloading compiler source from $GIT_CHIPKIT_CXX_REPO..." >> $LOGFILE
+    if [ -e chipKIT-cxx ]
+    then
+        rm -rf chipKIT-cxx
+    fi
+    curl -L $GIT_CHIPKIT_CXX_REPO | tar zx
+    assert_success $? "Downloading compiler source from $GIT_CHIPKIT_CXX_REPO"
+    mv *-chipKIT-cxx-* chipKIT-cxx
+    assert_success $? "Normalize chipKIT-cxx directory name"
+fi
 
 if [ "$CHECKOUT" = "yes" ]
 then
